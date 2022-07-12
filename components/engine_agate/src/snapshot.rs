@@ -6,7 +6,7 @@ use engine_traits::{
     IterOptions, Iterable, Iterator, Peekable, ReadOptions, Result, SeekKey, Snapshot,
 };
 
-use crate::{db_vector::PanicDBVector, engine::AgateEngine};
+use crate::{db_vector::AgateDBVector, engine::AgateEngine};
 
 #[derive(Clone, Debug)]
 pub struct PanicSnapshot;
@@ -18,7 +18,7 @@ impl Snapshot for PanicSnapshot {
 }
 
 impl Peekable for PanicSnapshot {
-    type DBVector = PanicDBVector;
+    type DBVector = AgateDBVector;
 
     fn get_value_opt(&self, opts: &ReadOptions, key: &[u8]) -> Result<Option<Self::DBVector>> {
         panic!()

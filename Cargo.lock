@@ -42,6 +42,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "agatedb"
+version = "0.1.0"
+source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#29431859f6f06605f0601796e3e09b391fcaa12f"
+dependencies = [
+ "bytes",
+ "coarsetime",
+ "crc",
+ "crc32fast",
+ "crossbeam-channel",
+ "enum_dispatch",
+ "farmhash",
+ "getset",
+ "lazy_static",
+ "log",
+ "memmap2 0.3.1",
+ "parking_lot 0.11.1",
+ "prost",
+ "proto",
+ "rand 0.7.3",
+ "skiplist",
+ "tempdir",
+ "thiserror",
+ "yatp 0.0.1 (git+https://github.com/tikv/yatp.git)",
+]
+
+[[package]]
 name = "ahash"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -433,7 +459,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "txn_types",
- "yatp",
+ "yatp 0.0.1 (git+https://github.com/tikv/yatp.git?branch=master)",
 ]
 
 [[package]]
@@ -490,7 +516,7 @@ dependencies = [
  "url",
  "uuid",
  "walkdir",
- "yatp",
+ "yatp 0.0.1 (git+https://github.com/tikv/yatp.git?branch=master)",
 ]
 
 [[package]]
@@ -626,6 +652,12 @@ dependencies = [
  "regex-automata",
  "serde",
 ]
+
+[[package]]
+name = "build_const"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4ae4235e6dac0694637c763029ecea1a2ec9e4e06ec2729bd21ba4d9c863eb7"
 
 [[package]]
 name = "bumpalo"
@@ -934,6 +966,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "coarsetime"
+version = "0.1.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "454038500439e141804c655b4cd1bc6a70bcb95cd2bc9463af5661b6956f0e46"
+dependencies = [
+ "libc 0.2.125",
+ "once_cell",
+ "wasi 0.11.0+wasi-snapshot-preview1",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "codec"
 version = "0.0.1"
 dependencies = [
@@ -1023,6 +1067,15 @@ name = "cpuid-bool"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8aebca1129a03dc6dc2b127edd729435bbc4a37e1d5f4d7513165089ceb02634"
+
+[[package]]
+name = "crc"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d663548de7f5cca343f1e0a48d14dcfb0e9eb4e079ec58883b7251539fa10aeb"
+dependencies = [
+ "build_const",
+]
 
 [[package]]
 name = "crc32fast"
@@ -1445,7 +1498,9 @@ dependencies = [
 name = "engine_agate"
 version = "0.0.1"
 dependencies = [
+ "agatedb",
  "engine_traits",
+ "getset",
  "kvproto",
  "raft",
  "tikv_alloc",
@@ -1575,6 +1630,18 @@ dependencies = [
  "panic_hook",
  "tempfile",
  "tikv_alloc",
+]
+
+[[package]]
+name = "enum_dispatch"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0eb359f1476bf611266ac1f5355bc14aeca37b299d0ebccc038ee7058891c9cb"
+dependencies = [
+ "once_cell",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -2164,9 +2231,9 @@ dependencies = [
 
 [[package]]
 name = "getset"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24b328c01a4d71d2d8173daa93562a73ab0fe85616876f02500f53d82948c504"
+checksum = "e45727250e75cc04ff2846a66397da8ef2b3db8e40e0cef4df67950a07621eb9"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -2834,9 +2901,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.14"
+version = "0.4.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
+checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if 1.0.0",
 ]
@@ -2917,6 +2984,15 @@ checksum = "6585fd95e7bb50d6cc31e20d4cf9afb4e2ba16c5846fc76793f11218da9c475b"
 dependencies = [
  "libc 0.2.125",
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "memmap2"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00b6c2ebff6180198788f5db08d7ce3bc1d0b617176678831a7510825973e357"
+dependencies = [
+ "libc 0.2.125",
 ]
 
 [[package]]
@@ -3582,7 +3658,7 @@ dependencies = [
  "tokio",
  "tokio-timer",
  "txn_types",
- "yatp",
+ "yatp 0.0.1 (git+https://github.com/tikv/yatp.git?branch=master)",
 ]
 
 [[package]]
@@ -3960,6 +4036,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "proto"
+version = "0.1.0"
+source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#29431859f6f06605f0601796e3e09b391fcaa12f"
+dependencies = [
+ "bytes",
+ "prost",
+ "prost-build",
+]
+
+[[package]]
 name = "protobuf"
 version = "2.8.0"
 source = "git+https://github.com/pingcap/rust-protobuf?branch=v2.8#6642ebaae4352ea01bf00e160480d8da966d3109"
@@ -4050,7 +4136,7 @@ dependencies = [
  "libc 0.2.125",
  "log",
  "lz4-sys",
- "memmap2",
+ "memmap2 0.5.3",
  "nix",
  "num-derive",
  "num-traits",
@@ -4174,7 +4260,7 @@ dependencies = [
  "tracker",
  "txn_types",
  "uuid",
- "yatp",
+ "yatp 0.0.1 (git+https://github.com/tikv/yatp.git?branch=master)",
 ]
 
 [[package]]
@@ -5081,7 +5167,7 @@ dependencies = [
  "tokio",
  "toml",
  "txn_types",
- "yatp",
+ "yatp 0.0.1 (git+https://github.com/tikv/yatp.git?branch=master)",
 ]
 
 [[package]]
@@ -5133,6 +5219,15 @@ name = "siphasher"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa8f3741c7372e75519bd9346068370c9cdaabcc1f9599cbcf2a2719352286b7"
+
+[[package]]
+name = "skiplist"
+version = "0.1.0"
+source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#29431859f6f06605f0601796e3e09b391fcaa12f"
+dependencies = [
+ "bytes",
+ "rand 0.7.3",
+]
 
 [[package]]
 name = "slab"
@@ -5934,7 +6029,7 @@ dependencies = [
  "tikv_util",
  "tipb",
  "tipb_helper",
- "yatp",
+ "yatp 0.0.1 (git+https://github.com/tikv/yatp.git?branch=master)",
 ]
 
 [[package]]
@@ -6093,7 +6188,7 @@ dependencies = [
  "url",
  "uuid",
  "walkdir",
- "yatp",
+ "yatp 0.0.1 (git+https://github.com/tikv/yatp.git?branch=master)",
  "zipf",
 ]
 
@@ -6301,7 +6396,7 @@ dependencies = [
  "tracker",
  "url",
  "utime",
- "yatp",
+ "yatp 0.0.1 (git+https://github.com/tikv/yatp.git?branch=master)",
 ]
 
 [[package]]
@@ -6831,6 +6926,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
 
 [[package]]
+name = "wasi"
+version = "0.11.0+wasi-snapshot-preview1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
+
+[[package]]
 name = "wasm-bindgen"
 version = "0.2.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7065,6 +7166,21 @@ checksum = "541b12c998c5b56aa2b4e6f18f03664eef9a4fd0a246a55594efae6cc2d964b5"
 name = "yatp"
 version = "0.0.1"
 source = "git+https://github.com/tikv/yatp.git?branch=master#2f5f6e47ba6fce8d55e7a57b7ee39a93bc0e8194"
+dependencies = [
+ "crossbeam-deque",
+ "dashmap",
+ "fail",
+ "lazy_static",
+ "num_cpus",
+ "parking_lot_core 0.9.1",
+ "prometheus",
+ "rand 0.8.3",
+]
+
+[[package]]
+name = "yatp"
+version = "0.0.1"
+source = "git+https://github.com/tikv/yatp.git#2f5f6e47ba6fce8d55e7a57b7ee39a93bc0e8194"
 dependencies = [
  "crossbeam-deque",
  "dashmap",

@@ -5,7 +5,7 @@ use engine_traits::{DBOptions, DBOptionsExt, Result, TitanDBOptions};
 use crate::engine::AgateEngine;
 
 impl DBOptionsExt for AgateEngine {
-    type DBOptions = PanicDBOptions;
+    type DBOptions = AgateDBOptions;
 
     fn get_db_options(&self) -> Self::DBOptions {
         panic!()
@@ -15,9 +15,9 @@ impl DBOptionsExt for AgateEngine {
     }
 }
 
-pub struct PanicDBOptions;
+pub struct AgateDBOptions;
 
-impl DBOptions for PanicDBOptions {
+impl DBOptions for AgateDBOptions {
     type TitanDBOptions = PanicTitanDBOptions;
 
     fn new() -> Self {

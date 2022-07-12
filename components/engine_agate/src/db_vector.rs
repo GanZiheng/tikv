@@ -5,11 +5,11 @@ use std::ops::Deref;
 use engine_traits::DBVector;
 
 #[derive(Debug)]
-pub struct PanicDBVector;
+pub struct AgateDBVector;
 
-impl DBVector for PanicDBVector {}
+impl DBVector for AgateDBVector {}
 
-impl Deref for PanicDBVector {
+impl Deref for AgateDBVector {
     type Target = [u8];
 
     fn deref(&self) -> &[u8] {
@@ -17,7 +17,7 @@ impl Deref for PanicDBVector {
     }
 }
 
-impl<'a> PartialEq<&'a [u8]> for PanicDBVector {
+impl<'a> PartialEq<&'a [u8]> for AgateDBVector {
     fn eq(&self, rhs: &&[u8]) -> bool {
         **rhs == **self
     }

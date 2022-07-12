@@ -14,3 +14,5 @@ tikv_alloc = { path = "../tikv_alloc" }
 tikv_util = { path = "../tikv_util", default-features = false }
 tracker = { path = "../tracker" }
 txn_types = { path = "../txn_types", default-features = false }
+agatedb = { git = "https://github.com/GanZiheng/agatedb", branch = "integrate-tikv" }
+getset = "0.1.2"

@@ -1,14 +1,19 @@
 // Copyright 2019 TiKV Project Authors. Licensed under Apache-2.0.
 
+use std::sync::Arc;
+
+use agatedb::Agate;
 use engine_traits::{
     IterOptions, Iterable, Iterator, KvEngine, Peekable, ReadOptions, Result, SeekKey, SyncMutable,
     TabletAccessor, WriteOptions,
 };
 
-use crate::{db_vector::PanicDBVector, snapshot::PanicSnapshot, write_batch::PanicWriteBatch};
+use crate::{db_vector::AgateDBVector, snapshot::PanicSnapshot, write_batch::PanicWriteBatch};
 
 #[derive(Clone, Debug)]
-pub struct AgateEngine;
+pub struct AgateEngine {
+    agate: Arc<Agate>,
+}
 
 impl KvEngine for AgateEngine {
     type Snapshot = PanicSnapshot;
@@ -35,7 +40,7 @@ impl TabletAccessor<AgateEngine> for AgateEngine {
 }
 
 impl Peekable for AgateEngine {
-    type DBVector = PanicDBVector;
+    type DBVector = AgateDBVector;
 
     fn get_value_opt(&self, opts: &ReadOptions, key: &[u8]) -> Result<Option<Self::DBVector>> {
         panic!()
