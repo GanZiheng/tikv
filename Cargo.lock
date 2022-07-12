@@ -1442,6 +1442,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "engine_agate"
+version = "0.0.1"
+dependencies = [
+ "engine_traits",
+ "kvproto",
+ "raft",
+ "tikv_alloc",
+ "tikv_util",
+ "tracker",
+ "txn_types",
+]
+
+[[package]]
 name = "engine_panic"
 version = "0.0.1"
 dependencies = [
@@ -5983,6 +5996,7 @@ dependencies = [
  "crc64fast",
  "crossbeam",
  "encryption_export",
+ "engine_agate",
  "engine_panic",
  "engine_rocks",
  "engine_test",
