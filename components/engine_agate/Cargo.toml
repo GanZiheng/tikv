@@ -6,7 +6,9 @@ edition = "2018"
 publish = false
 
 [dependencies]
+agatedb = { git = "https://github.com/GanZiheng/agatedb", branch = "integrate-tikv" }
 engine_traits = { path = "../engine_traits", default-features = false }
+getset = "0.1.2"
 kvproto = { git = "https://github.com/pingcap/kvproto.git" }
 raft = { version = "0.7.0", default-features = false, features = ["protobuf-codec"] }
 tikv_alloc = { path = "../tikv_alloc" }
@@ -14,5 +16,3 @@ tikv_alloc = { path = "../tikv_alloc" }
 tikv_util = { path = "../tikv_util", default-features = false }
 tracker = { path = "../tracker" }
 txn_types = { path = "../txn_types", default-features = false }
-agatedb = { git = "https://github.com/GanZiheng/agatedb", branch = "integrate-tikv" }
-getset = "0.1.2"
