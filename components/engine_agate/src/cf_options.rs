@@ -2,10 +2,10 @@
 
 use engine_traits::{CFOptionsExt, ColumnFamilyOptions, Result, SstPartitionerFactory};
 
-use crate::{db_options::PanicTitanDBOptions, engine::AgateEngine};
+use crate::{db_options::AgateTitanDBOptions, engine::AgateEngine};
 
 impl CFOptionsExt for AgateEngine {
-    type ColumnFamilyOptions = PanicColumnFamilyOptions;
+    type ColumnFamilyOptions = AgateColumnFamilyOptions;
 
     fn get_options_cf(&self, cf: &str) -> Result<Self::ColumnFamilyOptions> {
         panic!()
@@ -15,10 +15,10 @@ impl CFOptionsExt for AgateEngine {
     }
 }
 
-pub struct PanicColumnFamilyOptions;
+pub struct AgateColumnFamilyOptions;
 
-impl ColumnFamilyOptions for PanicColumnFamilyOptions {
-    type TitanDBOptions = PanicTitanDBOptions;
+impl ColumnFamilyOptions for AgateColumnFamilyOptions {
+    type TitanDBOptions = AgateTitanDBOptions;
 
     fn new() -> Self {
         panic!()

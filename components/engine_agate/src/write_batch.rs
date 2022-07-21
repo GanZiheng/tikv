@@ -5,7 +5,7 @@ use engine_traits::{Mutable, Result, WriteBatch, WriteBatchExt, WriteOptions};
 use crate::engine::AgateEngine;
 
 impl WriteBatchExt for AgateEngine {
-    type WriteBatch = PanicWriteBatch;
+    type WriteBatch = AgateWriteBatch;
 
     const WRITE_BATCH_MAX_KEYS: usize = 1;
 
@@ -17,9 +17,9 @@ impl WriteBatchExt for AgateEngine {
     }
 }
 
-pub struct PanicWriteBatch;
+pub struct AgateWriteBatch;
 
-impl WriteBatch for PanicWriteBatch {
+impl WriteBatch for AgateWriteBatch {
     fn write_opt(&self, _: &WriteOptions) -> Result<()> {
         panic!()
     }
@@ -54,7 +54,7 @@ impl WriteBatch for PanicWriteBatch {
     }
 }
 
-impl Mutable for PanicWriteBatch {
+impl Mutable for AgateWriteBatch {
     fn put(&mut self, key: &[u8], value: &[u8]) -> Result<()> {
         panic!()
     }
