@@ -7,16 +7,16 @@ use engine_traits::{ImportExt, IngestExternalFileOptions, Result};
 use crate::engine::AgateEngine;
 
 impl ImportExt for AgateEngine {
-    type IngestExternalFileOptions = PanicIngestExternalFileOptions;
+    type IngestExternalFileOptions = AgateIngestExternalFileOptions;
 
     fn ingest_external_file_cf(&self, cf: &str, files: &[&str]) -> Result<()> {
         panic!()
     }
 }
 
-pub struct PanicIngestExternalFileOptions;
+pub struct AgateIngestExternalFileOptions;
 
-impl IngestExternalFileOptions for PanicIngestExternalFileOptions {
+impl IngestExternalFileOptions for AgateIngestExternalFileOptions {
     fn new() -> Self {
         panic!()
     }

@@ -7,7 +7,7 @@ use kvproto::{
 };
 use raft::eraftpb::Entry;
 
-use crate::{engine::AgateEngine, write_batch::PanicWriteBatch};
+use crate::{engine::AgateEngine, write_batch::AgateWriteBatch};
 
 impl RaftEngineReadOnly for AgateEngine {
     fn get_raft_state(&self, raft_group_id: u64) -> Result<Option<RaftLocalState>> {
@@ -68,7 +68,7 @@ impl RaftEngineDebug for AgateEngine {
 }
 
 impl RaftEngine for AgateEngine {
-    type LogBatch = PanicWriteBatch;
+    type LogBatch = AgateWriteBatch;
 
     fn log_batch(&self, capacity: usize) -> Self::LogBatch {
         panic!()
@@ -143,7 +143,7 @@ impl RaftEngine for AgateEngine {
     }
 }
 
-impl RaftLogBatch for PanicWriteBatch {
+impl RaftLogBatch for AgateWriteBatch {
     fn append(&mut self, raft_group_id: u64, entries: Vec<Entry>) -> Result<()> {
         panic!()
     }

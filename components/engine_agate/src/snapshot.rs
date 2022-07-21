@@ -9,15 +9,15 @@ use engine_traits::{
 use crate::{db_vector::AgateDBVector, engine::AgateEngine};
 
 #[derive(Clone, Debug)]
-pub struct PanicSnapshot;
+pub struct AgateSnapshot;
 
-impl Snapshot for PanicSnapshot {
+impl Snapshot for AgateSnapshot {
     fn cf_names(&self) -> Vec<&str> {
         panic!()
     }
 }
 
-impl Peekable for PanicSnapshot {
+impl Peekable for AgateSnapshot {
     type DBVector = AgateDBVector;
 
     fn get_value_opt(&self, opts: &ReadOptions, key: &[u8]) -> Result<Option<Self::DBVector>> {
@@ -33,8 +33,8 @@ impl Peekable for PanicSnapshot {
     }
 }
 
-impl Iterable for PanicSnapshot {
-    type Iterator = PanicSnapshotIterator;
+impl Iterable for AgateSnapshot {
+    type Iterator = AgateSnapshotIterator;
 
     fn iterator_opt(&self, opts: IterOptions) -> Result<Self::Iterator> {
         panic!()
@@ -44,9 +44,9 @@ impl Iterable for PanicSnapshot {
     }
 }
 
-pub struct PanicSnapshotIterator;
+pub struct AgateSnapshotIterator;
 
-impl Iterator for PanicSnapshotIterator {
+impl Iterator for AgateSnapshotIterator {
     fn seek(&mut self, key: SeekKey<'_>) -> Result<bool> {
         panic!()
     }

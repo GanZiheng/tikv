@@ -8,7 +8,7 @@ use engine_traits::{
     TabletAccessor, WriteOptions,
 };
 
-use crate::{db_vector::AgateDBVector, snapshot::PanicSnapshot, write_batch::PanicWriteBatch};
+use crate::{db_vector::AgateDBVector, snapshot::AgateSnapshot, write_batch::AgateWriteBatch};
 
 #[derive(Clone, Debug)]
 pub struct AgateEngine {
@@ -16,7 +16,7 @@ pub struct AgateEngine {
 }
 
 impl KvEngine for AgateEngine {
-    type Snapshot = PanicSnapshot;
+    type Snapshot = AgateSnapshot;
 
     fn snapshot(&self) -> Self::Snapshot {
         panic!()
@@ -78,7 +78,7 @@ impl SyncMutable for AgateEngine {
 }
 
 impl Iterable for AgateEngine {
-    type Iterator = PanicEngineIterator;
+    type Iterator = AgateEngineIterator;
 
     fn iterator_opt(&self, opts: IterOptions) -> Result<Self::Iterator> {
         panic!()
@@ -88,9 +88,9 @@ impl Iterable for AgateEngine {
     }
 }
 
-pub struct PanicEngineIterator;
+pub struct AgateEngineIterator;
 
-impl Iterator for PanicEngineIterator {
+impl Iterator for AgateEngineIterator {
     fn seek(&mut self, key: SeekKey<'_>) -> Result<bool> {
         panic!()
     }

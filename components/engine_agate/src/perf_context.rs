@@ -6,16 +6,16 @@ use tracker::TrackerToken;
 use crate::engine::AgateEngine;
 
 impl PerfContextExt for AgateEngine {
-    type PerfContext = PanicPerfContext;
+    type PerfContext = AgatePerfContext;
 
     fn get_perf_context(&self, level: PerfLevel, kind: PerfContextKind) -> Self::PerfContext {
         panic!()
     }
 }
 
-pub struct PanicPerfContext;
+pub struct AgatePerfContext;
 
-impl PerfContext for PanicPerfContext {
+impl PerfContext for AgatePerfContext {
     fn start_observe(&mut self) {
         panic!()
     }

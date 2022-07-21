@@ -7,7 +7,7 @@ use engine_traits::{CompactExt, CompactedEvent, Result};
 use crate::engine::AgateEngine;
 
 impl CompactExt for AgateEngine {
-    type CompactedEvent = PanicCompactedEvent;
+    type CompactedEvent = AgateCompactedEvent;
 
     fn auto_compactions_is_disabled(&self) -> Result<bool> {
         panic!()
@@ -55,9 +55,9 @@ impl CompactExt for AgateEngine {
     }
 }
 
-pub struct PanicCompactedEvent;
+pub struct AgateCompactedEvent;
 
-impl CompactedEvent for PanicCompactedEvent {
+impl CompactedEvent for AgateCompactedEvent {
     fn total_bytes_declined(&self) -> u64 {
         panic!()
     }

@@ -10,14 +10,14 @@ use engine_traits::{
 use crate::engine::AgateEngine;
 
 impl SstExt for AgateEngine {
-    type SstReader = PanicSstReader;
-    type SstWriter = PanicSstWriter;
-    type SstWriterBuilder = PanicSstWriterBuilder;
+    type SstReader = AgateSstReader;
+    type SstWriter = AgateSstWriter;
+    type SstWriterBuilder = AgateSstWriterBuilder;
 }
 
-pub struct PanicSstReader;
+pub struct AgateSstReader;
 
-impl SstReader for PanicSstReader {
+impl SstReader for AgateSstReader {
     fn open(path: &str) -> Result<Self> {
         panic!()
     }
@@ -29,8 +29,8 @@ impl SstReader for PanicSstReader {
     }
 }
 
-impl Iterable for PanicSstReader {
-    type Iterator = PanicSstReaderIterator;
+impl Iterable for AgateSstReader {
+    type Iterator = AgateSstReaderIterator;
 
     fn iterator_opt(&self, opts: IterOptions) -> Result<Self::Iterator> {
         panic!()
@@ -40,9 +40,9 @@ impl Iterable for PanicSstReader {
     }
 }
 
-pub struct PanicSstReaderIterator;
+pub struct AgateSstReaderIterator;
 
-impl Iterator for PanicSstReaderIterator {
+impl Iterator for AgateSstReaderIterator {
     fn seek(&mut self, key: SeekKey<'_>) -> Result<bool> {
         panic!()
     }
@@ -69,11 +69,11 @@ impl Iterator for PanicSstReaderIterator {
     }
 }
 
-pub struct PanicSstWriter;
+pub struct AgateSstWriter;
 
-impl SstWriter for PanicSstWriter {
-    type ExternalSstFileInfo = PanicExternalSstFileInfo;
-    type ExternalSstFileReader = PanicExternalSstFileReader;
+impl SstWriter for AgateSstWriter {
+    type ExternalSstFileInfo = AgateExternalSstFileInfo;
+    type ExternalSstFileReader = AgateExternalSstFileReader;
 
     fn put(&mut self, key: &[u8], val: &[u8]) -> Result<()> {
         panic!()
@@ -92,9 +92,9 @@ impl SstWriter for PanicSstWriter {
     }
 }
 
-pub struct PanicSstWriterBuilder;
+pub struct AgateSstWriterBuilder;
 
-impl SstWriterBuilder<AgateEngine> for PanicSstWriterBuilder {
+impl SstWriterBuilder<AgateEngine> for AgateSstWriterBuilder {
     fn new() -> Self {
         panic!()
     }
@@ -114,14 +114,14 @@ impl SstWriterBuilder<AgateEngine> for PanicSstWriterBuilder {
         panic!()
     }
 
-    fn build(self, path: &str) -> Result<PanicSstWriter> {
+    fn build(self, path: &str) -> Result<AgateSstWriter> {
         panic!()
     }
 }
 
-pub struct PanicExternalSstFileInfo;
+pub struct AgateExternalSstFileInfo;
 
-impl ExternalSstFileInfo for PanicExternalSstFileInfo {
+impl ExternalSstFileInfo for AgateExternalSstFileInfo {
     fn new() -> Self {
         panic!()
     }
@@ -145,9 +145,9 @@ impl ExternalSstFileInfo for PanicExternalSstFileInfo {
     }
 }
 
-pub struct PanicExternalSstFileReader;
+pub struct AgateExternalSstFileReader;
 
-impl std::io::Read for PanicExternalSstFileReader {
+impl std::io::Read for AgateExternalSstFileReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         panic!()
     }

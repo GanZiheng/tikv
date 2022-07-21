@@ -1,15 +1,15 @@
 // Copyright 2019 TiKV Project Authors. Licensed under Apache-2.0.
 
-use crate::engine::PanicEngine;
+use crate::engine::AgateEngine;
 use engine_traits::{IOLimiter, IOLimiterExt};
 
-impl IOLimiterExt for PanicEngine {
-    type IOLimiter = PanicIOLimiter;
+impl IOLimiterExt for AgateEngine {
+    type IOLimiter = AgateIOLimiter;
 }
 
-pub struct PanicIOLimiter;
+pub struct AgateIOLimiter;
 
-impl IOLimiter for PanicIOLimiter {
+impl IOLimiter for AgateIOLimiter {
     fn new(bytes_per_sec: i64) -> Self {
         panic!()
     }

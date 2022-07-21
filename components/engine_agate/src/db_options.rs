@@ -18,7 +18,7 @@ impl DBOptionsExt for AgateEngine {
 pub struct AgateDBOptions;
 
 impl DBOptions for AgateDBOptions {
-    type TitanDBOptions = PanicTitanDBOptions;
+    type TitanDBOptions = AgateTitanDBOptions;
 
     fn new() -> Self {
         panic!()
@@ -49,9 +49,9 @@ impl DBOptions for AgateDBOptions {
     }
 }
 
-pub struct PanicTitanDBOptions;
+pub struct AgateTitanDBOptions;
 
-impl TitanDBOptions for PanicTitanDBOptions {
+impl TitanDBOptions for AgateTitanDBOptions {
     fn new() -> Self {
         panic!()
     }
