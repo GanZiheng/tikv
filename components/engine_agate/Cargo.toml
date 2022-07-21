@@ -16,3 +16,4 @@ tikv_alloc = { path = "../tikv_alloc" }
 tikv_util = { path = "../tikv_util", default-features = false }
 tracker = { path = "../tracker" }
 txn_types = { path = "../txn_types", default-features = false }
+bytes = "1.2.0"

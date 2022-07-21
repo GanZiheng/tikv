@@ -6,6 +6,6 @@ use crate::engine::AgateEngine;
 
 impl CFNamesExt for AgateEngine {
     fn cf_names(&self) -> Vec<&str> {
-        panic!()
+        self.column_families.iter().map(|cf| cf.as_str()).collect()
     }
 }
