@@ -19,13 +19,13 @@ pub fn add_cf_prefix(key: &[u8], cf_name: Option<String>) -> Vec<u8> {
     vec![cf_name_vec, key].concat()
 }
 
-pub fn get_cf_and_key(key_with_cf: &[u8]) -> (String, Vec<u8>) {
+pub fn get_cf_and_key(key_with_cf: &[u8]) -> (String, &[u8]) {
     let key_with_cf = std::str::from_utf8(key_with_cf).unwrap();
 
     let mut key_vec = key_with_cf.split(DELIMITER).collect::<Vec<&str>>();
 
     let cf_name = key_vec.remove(0).to_string();
-    let key = key_vec.concat().as_bytes().to_vec();
+    let key = key_vec[0].as_bytes();
 
     (cf_name, key)
 }
@@ -53,12 +53,12 @@ mod tests {
         let key_with_default_cf = add_cf_prefix(key, None);
         assert_eq!(
             get_cf_and_key(&key_with_default_cf),
-            (CF_DEFAULT.to_string(), key.to_vec())
+            (CF_DEFAULT.to_string(), key)
         );
 
         let cf = "cf".to_string();
 
         let key_with_cf = add_cf_prefix(key, Some(cf.clone()));
-        assert_eq!(get_cf_and_key(&key_with_cf), (cf, key.to_vec()));
+        assert_eq!(get_cf_and_key(&key_with_cf), (cf, key));
     }
 }

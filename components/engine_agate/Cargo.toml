@@ -5,15 +5,21 @@ description = "An example TiKV storage engine with AgateDB"
 edition = "2018"
 publish = false
 
+[features]
+default = ["futures-executor/thread-pool"]
+
 [dependencies]
 agatedb = { git = "https://github.com/GanZiheng/agatedb", branch = "integrate-tikv" }
+# agatedb = { path = "../../../agatedb" }
+bytes = "1.2.0"
 engine_traits = { path = "../engine_traits", default-features = false }
+futures-executor = "0.3.1"
 getset = "0.1.2"
 kvproto = { git = "https://github.com/pingcap/kvproto.git" }
 raft = { version = "0.7.0", default-features = false, features = ["protobuf-codec"] }
+tempfile = "3.0"
 tikv_alloc = { path = "../tikv_alloc" }
 # FIXME: Remove this dep from the engine_traits interface
 tikv_util = { path = "../tikv_util", default-features = false }
 tracker = { path = "../tracker" }
 txn_types = { path = "../txn_types", default-features = false }
-bytes = "1.2.0"
