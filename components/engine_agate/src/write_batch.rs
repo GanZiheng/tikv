@@ -72,18 +72,18 @@ impl WriteBatch for AgateWriteBatch {
         for op in &wb.operations {
             match op {
                 WriteBatchOpType::Put(key, value, cf) => {
-                    let key = &add_cf_prefix(key, cf.clone());
-                    txn.set(Bytes::copy_from_slice(key), value.clone())
+                    let key = add_cf_prefix(key, cf.clone());
+                    txn.set(Bytes::from(key), value.clone())
                         .map_err(|e| engine_traits::Error::Engine(e.to_string()))?;
                 }
                 WriteBatchOpType::Delete(key, cf) => {
-                    let key = &add_cf_prefix(key, cf.clone());
-                    txn.delete(Bytes::copy_from_slice(key))
+                    let key = add_cf_prefix(key, cf.clone());
+                    txn.delete(Bytes::from(key))
                         .map_err(|e| engine_traits::Error::Engine(e.to_string()))?;
                 }
                 WriteBatchOpType::DeleteRange(begin_key, end_key, cf) => {
-                    let begin_key = &add_cf_prefix(begin_key, cf.clone());
-                    let end_key = &add_cf_prefix(end_key, cf.clone());
+                    let begin_key = add_cf_prefix(begin_key, cf.clone());
+                    let end_key = add_cf_prefix(end_key, cf.clone());
 
                     let mut iter = txn.new_iterator(&IteratorOptions::default());
                     iter.seek(&Bytes::from(begin_key.clone()));
@@ -95,8 +95,8 @@ impl WriteBatch for AgateWriteBatch {
 
                         let (cf_name, key) = get_cf_and_key(iter.item().key());
 
-                        let cf_name_match = match &cf {
-                            Some(cf) => &cf_name == cf,
+                        let cf_name_match = match cf {
+                            Some(cf) => cf_name == *cf,
                             None => cf_name == CF_DEFAULT,
                         };
 
