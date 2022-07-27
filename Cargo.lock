@@ -44,7 +44,7 @@ dependencies = [
 [[package]]
 name = "agatedb"
 version = "0.1.0"
-source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#29431859f6f06605f0601796e3e09b391fcaa12f"
+source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#d205aa47f5e0bc12cbc51f2b93fe41a984200076"
 dependencies = [
  "bytes",
  "coarsetime",
@@ -679,9 +679,9 @@ checksum = "08c48aae112d48ed9f069b33538ea9e3e90aa263cfa3d1c24309612b1f7472de"
 
 [[package]]
 name = "bytes"
-version = "1.0.1"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b700ce4376041dcd0a327fd0097c41095743c4c8af8887265942faf1100bd040"
+checksum = "f0b3de4a0c5e67e16066a0715723abd91edc2f9001d09c46e1dca929351e130e"
 dependencies = [
  "serde",
 ]
@@ -1499,10 +1499,13 @@ name = "engine_agate"
 version = "0.0.1"
 dependencies = [
  "agatedb",
+ "bytes",
  "engine_traits",
+ "futures-executor",
  "getset",
  "kvproto",
  "raft",
+ "tempfile",
  "tikv_alloc",
  "tikv_util",
  "tracker",
@@ -4038,7 +4041,7 @@ dependencies = [
 [[package]]
 name = "proto"
 version = "0.1.0"
-source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#29431859f6f06605f0601796e3e09b391fcaa12f"
+source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#d205aa47f5e0bc12cbc51f2b93fe41a984200076"
 dependencies = [
  "bytes",
  "prost",
@@ -5223,7 +5226,7 @@ checksum = "fa8f3741c7372e75519bd9346068370c9cdaabcc1f9599cbcf2a2719352286b7"
 [[package]]
 name = "skiplist"
 version = "0.1.0"
-source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#29431859f6f06605f0601796e3e09b391fcaa12f"
+source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#d205aa47f5e0bc12cbc51f2b93fe41a984200076"
 dependencies = [
  "bytes",
  "rand 0.7.3",

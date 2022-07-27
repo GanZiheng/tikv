@@ -5,7 +5,13 @@ use std::ops::Deref;
 use engine_traits::DBVector;
 
 #[derive(Debug)]
-pub struct AgateDBVector;
+pub struct AgateDBVector(Vec<u8>);
+
+impl AgateDBVector {
+    pub fn from_raw(raw: &[u8]) -> AgateDBVector {
+        AgateDBVector(Vec::from(raw))
+    }
+}
 
 impl DBVector for AgateDBVector {}
 
@@ -13,7 +19,7 @@ impl Deref for AgateDBVector {
     type Target = [u8];
 
     fn deref(&self) -> &[u8] {
-        panic!()
+        &self.0
     }
 }
 
