@@ -78,11 +78,11 @@ impl Peekable for AgateEngine {
     type DBVector = AgateDBVector;
 
     fn get_value_opt(&self, opts: &ReadOptions, key: &[u8]) -> Result<Option<Self::DBVector>> {
-        let key = &add_cf_prefix(key, None);
+        let key = add_cf_prefix(key, None);
 
         let mut txn = self.agate.new_transaction(false);
 
-        match txn.get(&Bytes::copy_from_slice(key)) {
+        match txn.get(&Bytes::from(key)) {
             Ok(item) => Ok(Some(AgateDBVector::from_raw(item.value()))),
             Err(e) => match e {
                 agatedb::Error::KeyNotFound(()) => Ok(None),
@@ -98,11 +98,11 @@ impl Peekable for AgateEngine {
     ) -> Result<Option<Self::DBVector>> {
         self.check_cf_exist(cf)?;
 
-        let key = &add_cf_prefix(key, Some(cf.to_string()));
+        let key = add_cf_prefix(key, Some(cf.to_string()));
 
         let mut txn = self.agate.new_transaction(false);
 
-        match txn.get(&Bytes::copy_from_slice(key)) {
+        match txn.get(&Bytes::from(key)) {
             Ok(item) => Ok(Some(AgateDBVector::from_raw(item.value()))),
             Err(e) => match e {
                 agatedb::Error::KeyNotFound(()) => Ok(None),
@@ -114,10 +114,11 @@ impl Peekable for AgateEngine {
 
 impl SyncMutable for AgateEngine {
     fn put(&self, key: &[u8], value: &[u8]) -> Result<()> {
-        let key = &add_cf_prefix(key, None);
+        let key = add_cf_prefix(key, None);
 
         let mut txn = self.agate.new_transaction(true);
-        txn.set(Bytes::copy_from_slice(key), Bytes::copy_from_slice(value));
+        txn.set(Bytes::from(key), Bytes::copy_from_slice(value))
+            .map_err(|e| engine_traits::Error::Engine(e.to_string()))?;
         txn.commit()
             .map_err(|e| engine_traits::Error::Engine(e.to_string()))
     }
@@ -125,19 +126,21 @@ impl SyncMutable for AgateEngine {
     fn put_cf(&self, cf: &str, key: &[u8], value: &[u8]) -> Result<()> {
         self.check_cf_exist(cf)?;
 
-        let key = &add_cf_prefix(key, Some(cf.to_string()));
+        let key = add_cf_prefix(key, Some(cf.to_string()));
 
         let mut txn = self.agate.new_transaction(true);
-        txn.set(Bytes::copy_from_slice(key), Bytes::copy_from_slice(value));
+        txn.set(Bytes::from(key), Bytes::copy_from_slice(value))
+            .map_err(|e| engine_traits::Error::Engine(e.to_string()))?;
         txn.commit()
             .map_err(|e| engine_traits::Error::Engine(e.to_string()))
     }
 
     fn delete(&self, key: &[u8]) -> Result<()> {
-        let key = &add_cf_prefix(key, None);
+        let key = add_cf_prefix(key, None);
 
         let mut txn = self.agate.new_transaction(true);
-        txn.delete(Bytes::copy_from_slice(key));
+        txn.delete(Bytes::from(key))
+            .map_err(|e| engine_traits::Error::Engine(e.to_string()))?;
         txn.commit()
             .map_err(|e| engine_traits::Error::Engine(e.to_string()))
     }
@@ -145,10 +148,11 @@ impl SyncMutable for AgateEngine {
     fn delete_cf(&self, cf: &str, key: &[u8]) -> Result<()> {
         self.check_cf_exist(cf)?;
 
-        let key = &add_cf_prefix(key, Some(cf.to_string()));
+        let key = add_cf_prefix(key, Some(cf.to_string()));
 
         let mut txn = self.agate.new_transaction(true);
-        txn.delete(Bytes::copy_from_slice(key));
+        txn.delete(Bytes::from(key))
+            .map_err(|e| engine_traits::Error::Engine(e.to_string()))?;
         txn.commit()
             .map_err(|e| engine_traits::Error::Engine(e.to_string()))
     }
@@ -158,7 +162,8 @@ impl SyncMutable for AgateEngine {
 
         self.scan(begin_key, end_key, false, |key, _| {
             let key = &add_cf_prefix(key, None);
-            txn.delete(Bytes::copy_from_slice(key));
+            txn.delete(Bytes::copy_from_slice(key))
+                .map_err(|e| engine_traits::Error::Engine(e.to_string()))?;
 
             Ok(true)
         });
@@ -173,8 +178,9 @@ impl SyncMutable for AgateEngine {
         let mut txn = self.agate.new_transaction(true);
 
         self.scan_cf(cf, begin_key, end_key, false, |key, _| {
-            let key = &add_cf_prefix(key, Some(cf.to_string()));
-            txn.delete(Bytes::copy_from_slice(key));
+            let key = add_cf_prefix(key, Some(cf.to_string()));
+            txn.delete(Bytes::from(key))
+                .map_err(|e| engine_traits::Error::Engine(e.to_string()))?;
 
             Ok(true)
         });
