@@ -9,7 +9,7 @@ publish = false
 doctest = false
 
 [features]
-default = ["test-engine-kv-rocksdb", "test-engine-raft-raft-engine"]
+default = ["test-engine-kv-rocksdb", "test-engine-raft-raft-engine", "futures-executor/thread-pool"]
 
 test-engine-kv-rocksdb = [
   "engine_test/test-engine-kv-rocksdb"
@@ -30,3 +30,4 @@ engine_traits = { path = "../engine_traits", default-features = false }
 panic_hook = { path = "../panic_hook" }
 tempfile = "3.0"
 tikv_alloc = { path = "../tikv_alloc" }
+futures-executor = "0.3.1"
