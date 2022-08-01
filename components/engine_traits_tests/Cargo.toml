@@ -9,10 +9,13 @@ publish = false
 doctest = false
 
 [features]
-default = ["test-engine-kv-rocksdb", "test-engine-raft-raft-engine", "futures-executor/thread-pool"]
+default = ["test-engine-kv-agatedb", "test-engine-raft-raft-engine", "futures-executor/thread-pool"]
 
 test-engine-kv-rocksdb = [
   "engine_test/test-engine-kv-rocksdb"
+]
+test-engine-kv-agatedb = [
+  "engine_test/test-engine-kv-agatedb"
 ]
 test-engine-raft-raft-engine = [
   "engine_test/test-engine-raft-raft-engine"
@@ -22,6 +25,9 @@ test-engines-rocksdb = [
 ]
 test-engines-panic = [
   "engine_test/test-engines-panic",
+]
+test-engines-agatedb = [
+  "engine_test/test-engines-agatedb",
 ]
 
 [dependencies]

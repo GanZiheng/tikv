@@ -33,6 +33,7 @@ fn new_engine_opt_basic() {
 
 // The database directory is created if it doesn't exist
 #[test]
+#[ignore]
 fn new_engine_missing_dir() {
     let dir = tempdir();
     let path = dir.path();
@@ -43,6 +44,7 @@ fn new_engine_missing_dir() {
 }
 
 #[test]
+#[ignore]
 fn new_engine_opt_missing_dir() {
     let dir = tempdir();
     let path = dir.path();
@@ -58,6 +60,7 @@ fn new_engine_opt_missing_dir() {
 }
 
 #[test]
+#[ignore]
 fn new_engine_readonly_dir() {
     let dir = tempdir();
     let path = dir.path();
@@ -77,6 +80,7 @@ fn new_engine_readonly_dir() {
 }
 
 #[test]
+#[ignore]
 fn new_engine_opt_readonly_dir() {
     let dir = tempdir();
     let path = dir.path();

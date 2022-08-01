@@ -1590,10 +1590,12 @@ name = "engine_test"
 version = "0.0.1"
 dependencies = [
  "encryption",
+ "engine_agate",
  "engine_panic",
  "engine_rocks",
  "engine_traits",
  "file_system",
+ "futures-executor",
  "raft_log_engine",
  "tempfile",
  "tikv_alloc",
