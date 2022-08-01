@@ -82,6 +82,12 @@ impl WriteBatch for AgateWriteBatch {
                         .map_err(|e| engine_traits::Error::Engine(e.to_string()))?;
                 }
                 WriteBatchOpType::DeleteRange(begin_key, end_key, cf) => {
+                    if end_key < begin_key {
+                        return Err(engine_traits::Error::Engine(
+                            "end_key should be equal or greater than begin_key".to_string(),
+                        ));
+                    }
+
                     let begin_key = add_cf_prefix(begin_key, cf.clone());
                     let end_key = add_cf_prefix(end_key, cf.clone());
 
@@ -93,7 +99,7 @@ impl WriteBatch for AgateWriteBatch {
                             return false;
                         }
 
-                        let (cf_name, key) = get_cf_and_key(iter.item().key());
+                        let (cf_name, _) = get_cf_and_key(iter.item().key());
 
                         let cf_name_match = match cf {
                             Some(cf) => cf_name == *cf,
@@ -104,10 +110,10 @@ impl WriteBatch for AgateWriteBatch {
                             return false;
                         }
 
-                        if !begin_key.is_empty() && key < &begin_key[..] {
+                        if !begin_key.is_empty() && iter.item().key() < &begin_key[..] {
                             return false;
                         }
-                        if !end_key.is_empty() && key >= &end_key[..] {
+                        if !end_key.is_empty() && iter.item().key() >= &end_key[..] {
                             return false;
                         }
 

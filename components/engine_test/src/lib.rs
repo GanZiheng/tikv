@@ -74,6 +74,11 @@ pub mod raft {
 
 /// Types and constructors for the "kv" engine
 pub mod kv {
+    #[cfg(feature = "test-engine-kv-agatedb")]
+    pub use engine_agate::{
+        AgateEngine as KvTestEngine, AgateEngineIterator as KvTestEngineIterator,
+        AgateSnapshot as KvTestSnapshot, AgateWriteBatch as KvTestWriteBatch,
+    };
     #[cfg(feature = "test-engine-kv-panic")]
     pub use engine_panic::{
         PanicEngine as KvTestEngine, PanicEngineIterator as KvTestEngineIterator,
@@ -466,6 +471,42 @@ pub mod ctor {
                     db_opts.as_ref().and_then(|opts| opts.key_manager.clone()),
                     db_opts.and_then(|opts| opts.rate_limiter),
                 )
+            }
+        }
+    }
+
+    mod agate {
+        use std::path::Path;
+
+        use engine_agate::AgateEngine;
+        use engine_traits::Result;
+
+        use super::{CFOptions, DBOptions, KvEngineConstructorExt, RaftEngineConstructorExt};
+
+        impl KvEngineConstructorExt for engine_agate::AgateEngine {
+            fn new_kv_engine(
+                path: &str,
+                _db_opt: Option<DBOptions>,
+                cfs: &[&str],
+                _opts: Option<Vec<CFOptions<'_>>>,
+            ) -> Result<Self> {
+                let cfs = cfs.into_iter().map(|cf| cf.to_string()).collect();
+                Ok(AgateEngine::new(&Path::new(path), cfs))
+            }
+
+            fn new_kv_engine_opt(
+                path: &str,
+                _db_opt: DBOptions,
+                _cfs_opts: Vec<CFOptions<'_>>,
+            ) -> Result<Self> {
+                Ok(AgateEngine::new(&Path::new(path), vec![]))
+            }
+        }
+
+        impl RaftEngineConstructorExt for engine_agate::AgateEngine {
+            fn new_raft_engine(_path: &str, _db_opt: Option<DBOptions>) -> Result<Self> {
+                // Ok(AgateEngine)
+                todo!()
             }
         }
     }

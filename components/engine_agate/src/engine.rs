@@ -158,6 +158,12 @@ impl SyncMutable for AgateEngine {
     }
 
     fn delete_range(&self, begin_key: &[u8], end_key: &[u8]) -> Result<()> {
+        if end_key < begin_key {
+            return Err(engine_traits::Error::Engine(
+                "end_key < begin_key".to_string(),
+            ));
+        }
+
         let mut txn = self.agate.new_transaction(true);
 
         self.scan(begin_key, end_key, false, |key, _| {
@@ -173,6 +179,12 @@ impl SyncMutable for AgateEngine {
     }
 
     fn delete_range_cf(&self, cf: &str, begin_key: &[u8], end_key: &[u8]) -> Result<()> {
+        if end_key < begin_key {
+            return Err(engine_traits::Error::Engine(
+                "end_key < begin_key".to_string(),
+            ));
+        }
+
         self.check_cf_exist(cf)?;
 
         let mut txn = self.agate.new_transaction(true);
@@ -242,12 +254,17 @@ impl Iterator for AgateEngineIterator {
                     return Ok(false);
                 }
 
+                assert!(self.valid()?);
+                let mut last_key = vec![];
+
                 while self.valid()? {
+                    let key = self.key();
+                    last_key.clear();
+                    last_key.extend_from_slice(key);
                     self.next();
                 }
 
-                self.prev();
-                Ok(self.valid()?)
+                self.seek(SeekKey::Key(&last_key))
             }
             SeekKey::Key(key) => {
                 self.iter
@@ -263,7 +280,12 @@ impl Iterator for AgateEngineIterator {
             SeekKey::Start => self.seek(SeekKey::Start),
             SeekKey::End => self.seek(SeekKey::End),
             SeekKey::Key(key) => {
-                self.seek(SeekKey::Key(key))?;
+                let valid = self.seek(SeekKey::Key(key))?;
+
+                if !valid {
+                    // TODO: Consider exist_key < seek_key < upper_bound_key.
+                    return self.seek_to_last();
+                }
 
                 if self.key() != key {
                     self.prev();
