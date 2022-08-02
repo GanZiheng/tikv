@@ -490,8 +490,8 @@ pub mod ctor {
                 cfs: &[&str],
                 _opts: Option<Vec<CFOptions<'_>>>,
             ) -> Result<Self> {
-                let cfs = cfs.into_iter().map(|cf| cf.to_string()).collect();
-                Ok(AgateEngine::new(&Path::new(path), cfs))
+                let cfs = cfs.iter().map(|cf| cf.to_string()).collect();
+                Ok(AgateEngine::new(Path::new(path), cfs))
             }
 
             fn new_kv_engine_opt(
@@ -499,14 +499,14 @@ pub mod ctor {
                 _db_opt: DBOptions,
                 _cfs_opts: Vec<CFOptions<'_>>,
             ) -> Result<Self> {
-                Ok(AgateEngine::new(&Path::new(path), vec![]))
+                Ok(AgateEngine::new(Path::new(path), vec![]))
             }
         }
 
         impl RaftEngineConstructorExt for engine_agate::AgateEngine {
             fn new_raft_engine(_path: &str, _db_opt: Option<DBOptions>) -> Result<Self> {
                 // Ok(AgateEngine)
-                todo!()
+                unimplemented!()
             }
         }
     }
