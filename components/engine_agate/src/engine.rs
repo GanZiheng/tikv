@@ -244,7 +244,7 @@ impl Iterator for AgateEngineIterator {
                 self.iter
                     .seek(&Bytes::from(add_cf_prefix(&[], self.cf_name.clone())));
 
-                Ok(self.valid()?)
+                self.valid()
             }
             SeekKey::End => {
                 let seek_result = self.seek(SeekKey::Start)?;
@@ -270,7 +270,7 @@ impl Iterator for AgateEngineIterator {
                 self.iter
                     .seek(&Bytes::from(add_cf_prefix(key, self.cf_name.clone())));
 
-                Ok(self.valid()?)
+                self.valid()
             }
         }
     }
@@ -291,7 +291,7 @@ impl Iterator for AgateEngineIterator {
                     self.prev();
                 }
 
-                Ok(self.valid()?)
+                self.valid()
             }
         }
     }

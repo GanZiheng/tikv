@@ -44,7 +44,7 @@ dependencies = [
 [[package]]
 name = "agatedb"
 version = "0.1.0"
-source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#d205aa47f5e0bc12cbc51f2b93fe41a984200076"
+source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#d2a5df671b582905699da03f77fca95bd5119966"
 dependencies = [
  "bytes",
  "coarsetime",
@@ -4044,7 +4044,7 @@ dependencies = [
 [[package]]
 name = "proto"
 version = "0.1.0"
-source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#d205aa47f5e0bc12cbc51f2b93fe41a984200076"
+source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#d2a5df671b582905699da03f77fca95bd5119966"
 dependencies = [
  "bytes",
  "prost",
@@ -5229,7 +5229,7 @@ checksum = "fa8f3741c7372e75519bd9346068370c9cdaabcc1f9599cbcf2a2719352286b7"
 [[package]]
 name = "skiplist"
 version = "0.1.0"
-source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#d205aa47f5e0bc12cbc51f2b93fe41a984200076"
+source = "git+https://github.com/GanZiheng/agatedb?branch=integrate-tikv#d2a5df671b582905699da03f77fca95bd5119966"
 dependencies = [
  "bytes",
  "rand 0.7.3",
