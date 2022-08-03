@@ -6,11 +6,12 @@ use engine_traits::{CompactExt, CompactedEvent, Result};
 
 use crate::engine::AgateEngine;
 
+// TODO: Implement these for AgateDB.
 impl CompactExt for AgateEngine {
     type CompactedEvent = AgateCompactedEvent;
 
     fn auto_compactions_is_disabled(&self) -> Result<bool> {
-        panic!()
+        Ok(false)
     }
 
     fn compact_range(
@@ -21,7 +22,7 @@ impl CompactExt for AgateEngine {
         exclusive_manual: bool,
         max_subcompactions: u32,
     ) -> Result<()> {
-        panic!()
+        Ok(())
     }
 
     fn compact_files_in_range(
@@ -30,7 +31,7 @@ impl CompactExt for AgateEngine {
         end: Option<&[u8]>,
         output_level: Option<i32>,
     ) -> Result<()> {
-        panic!()
+        Ok(())
     }
 
     fn compact_files_in_range_cf(
@@ -40,7 +41,7 @@ impl CompactExt for AgateEngine {
         end: Option<&[u8]>,
         output_level: Option<i32>,
     ) -> Result<()> {
-        panic!()
+        Ok(())
     }
 
     fn compact_files_cf(
@@ -51,23 +52,24 @@ impl CompactExt for AgateEngine {
         max_subcompactions: u32,
         exclude_l0: bool,
     ) -> Result<()> {
-        panic!()
+        Ok(())
     }
 }
 
 pub struct AgateCompactedEvent;
 
+// TODO: Make size declining not trivial AgateDB.
 impl CompactedEvent for AgateCompactedEvent {
     fn total_bytes_declined(&self) -> u64 {
-        panic!()
+        0
     }
 
     fn is_size_declining_trivial(&self, split_check_diff: u64) -> bool {
-        panic!()
+        true
     }
 
     fn output_level_label(&self) -> String {
-        panic!()
+        "AgateCompactedEvent::CompactedEvent".to_string()
     }
 
     fn calc_ranges_declined_bytes(
@@ -75,10 +77,10 @@ impl CompactedEvent for AgateCompactedEvent {
         ranges: &BTreeMap<Vec<u8>, u64>,
         bytes_threshold: u64,
     ) -> Vec<(u64, u64)> {
-        panic!()
+        vec![]
     }
 
     fn cf(&self) -> &str {
-        panic!()
+        "AgateCompactedEvent"
     }
 }
