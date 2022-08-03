@@ -124,7 +124,6 @@ fn reverse() -> Result<()> {
 // todo test seek_for_prev(SeekKey::Key)
 
 #[test]
-#[ignore] // Restore this when `AgateSstReaderIterator` can skip deleted entries.
 fn delete() -> Result<()> {
     let tempdir = tempdir();
     let sst_path = tempdir.path().join("1.sst").to_string_lossy().to_string();

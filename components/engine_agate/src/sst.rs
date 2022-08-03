@@ -86,21 +86,40 @@ pub struct AgateSstReaderIterator {
 }
 
 impl AgateSstReaderIterator {
-    fn update_value(&mut self) {
-        self.current_value = self.iter.value();
-    }
+    fn update(&mut self, is_forward: bool) -> Result<bool> {
+        loop {
+            if !self.iter.valid() {
+                return Ok(false);
+            }
 
-    fn check_valid_and_update(&mut self) -> Result<bool> {
-        if self.valid()? {
-            self.update_value();
-            Ok(true)
-        } else {
-            Ok(false)
+            let (cf_name, key) = get_cf_and_key(self.iter.key());
+
+            let cf_name_match = match &self.cf_name {
+                Some(cf) => &cf_name == cf,
+                None => cf_name == CF_DEFAULT,
+            };
+
+            if !cf_name_match {
+                return Ok(false);
+            }
+
+            let value = self.iter.value();
+            if value.meta & VALUE_DELETE != 0 {
+                if is_forward {
+                    self.iter.next();
+                } else {
+                    self.iter.prev();
+                }
+
+                continue;
+            }
+
+            self.current_value = value;
+            return Ok(true);
         }
     }
 }
 
-// TODO: Handle entries deleted properly.
 impl Iterator for AgateSstReaderIterator {
     fn seek(&mut self, key: SeekKey<'_>) -> Result<bool> {
         match key {
@@ -108,30 +127,30 @@ impl Iterator for AgateSstReaderIterator {
                 self.iter
                     .seek(&Bytes::from(add_cf_prefix(&[], self.cf_name.clone())));
 
-                self.check_valid_and_update()
+                self.update(true)
             }
             SeekKey::End => {
                 let valid = self.seek(SeekKey::Start)?;
 
-                // No such key found.
                 if !valid {
                     return Ok(false);
                 }
 
-                assert!(self.valid()?);
-
-                while self.valid()? {
-                    self.next();
+                loop {
+                    let valid = self.next()?;
+                    if !valid {
+                        break;
+                    }
                 }
 
                 self.iter.prev();
-                self.check_valid_and_update()
+                self.update(false)
             }
             SeekKey::Key(key) => {
                 self.iter
                     .seek(&Bytes::from(add_cf_prefix(key, self.cf_name.clone())));
 
-                self.check_valid_and_update()
+                self.update(true)
             }
         }
     }
@@ -142,16 +161,15 @@ impl Iterator for AgateSstReaderIterator {
             SeekKey::Key(key) => {
                 let valid = self.seek(SeekKey::Key(key))?;
 
-                if !valid {
-                    // TODO: Consider exist_key < seek_key < upper_bound_key.
-                    return self.seek_to_last();
-                }
+                if !self.iter.valid() {
+                    self.seek(SeekKey::End)
+                } else {
+                    if self.key() != key {
+                        self.prev();
+                    }
 
-                if self.key() != key {
-                    self.prev();
+                    self.update(false)
                 }
-
-                self.check_valid_and_update()
             }
         }
     }
@@ -162,7 +180,7 @@ impl Iterator for AgateSstReaderIterator {
         }
 
         self.iter.prev();
-        self.check_valid_and_update()
+        self.update(false)
     }
     fn next(&mut self) -> Result<bool> {
         if !self.iter.valid() {
@@ -170,7 +188,7 @@ impl Iterator for AgateSstReaderIterator {
         }
 
         self.iter.next();
-        self.check_valid_and_update()
+        self.update(true)
     }
 
     fn key(&self) -> &[u8] {
@@ -196,19 +214,6 @@ impl Iterator for AgateSstReaderIterator {
 
         if !cf_name_match {
             return Ok(false);
-        }
-
-        if self.opts.lower_bound().is_some() {
-            let lower = self.opts.lower_bound().unwrap();
-            if !lower.is_empty() && key < lower {
-                return Ok(false);
-            }
-        }
-        if self.opts.upper_bound().is_some() {
-            let upper = self.opts.upper_bound().unwrap();
-            if !upper.is_empty() && key >= upper {
-                return Ok(false);
-            }
         }
 
         Ok(true)
