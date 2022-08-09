@@ -16,9 +16,9 @@ use engine_rocks::{
     Compat, RocksEngine, RocksEngineIterator, RocksMvccProperties, RocksWriteBatch,
 };
 use engine_traits::{
-    Engines, IterOptions, Iterable, Iterator as EngineIterator, Mutable, MvccProperties, Peekable,
-    RaftEngine, Range, RangePropertiesExt, SeekKey, SyncMutable, WriteBatch, WriteBatchExt,
-    WriteOptions, CF_DEFAULT, CF_LOCK, CF_RAFT, CF_WRITE,
+    Engines, IterOptions, Iterable, Iterator as EngineIterator, KvEngine, Mutable, MvccProperties,
+    Peekable, RaftEngine, Range, RangePropertiesExt, SeekKey, SyncMutable, WriteBatch,
+    WriteBatchExt, WriteOptions, CF_DEFAULT, CF_LOCK, CF_RAFT, CF_WRITE,
 };
 use kvproto::{
     debugpb::{self, Db as DBType},
@@ -125,17 +125,14 @@ impl From<BottommostLevelCompaction> for debugpb::BottommostLevelCompaction {
 }
 
 #[derive(Clone)]
-pub struct Debugger<ER: RaftEngine> {
-    engines: Engines<RocksEngine, ER>,
-    reset_to_version_manager: ResetToVersionManager,
+pub struct Debugger<EK: KvEngine, ER: RaftEngine> {
+    engines: Engines<EK, ER>,
+    reset_to_version_manager: ResetToVersionManager<EK>,
     cfg_controller: ConfigController,
 }
 
-impl<ER: RaftEngine> Debugger<ER> {
-    pub fn new(
-        engines: Engines<RocksEngine, ER>,
-        cfg_controller: ConfigController,
-    ) -> Debugger<ER> {
+impl<EK: KvEngine, ER: RaftEngine> Debugger<EK, ER> {
+    pub fn new(engines: Engines<EK, ER>, cfg_controller: ConfigController) -> Debugger<EK, ER> {
         let reset_to_version_manager = ResetToVersionManager::new(engines.kv.clone());
         Debugger {
             engines,
@@ -144,7 +141,7 @@ impl<ER: RaftEngine> Debugger<ER> {
         }
     }
 
-    pub fn get_engine(&self) -> &Engines<RocksEngine, ER> {
+    pub fn get_engine(&self) -> &Engines<EK, ER> {
         &self.engines
     }
 
@@ -167,9 +164,9 @@ impl<ER: RaftEngine> Debugger<ER> {
         Ok(regions)
     }
 
-    fn get_db_from_type(&self, db: DBType) -> Result<&Arc<DB>> {
+    fn get_db_from_type(&self, db: DBType) -> Result<&EK> {
         match db {
-            DBType::Kv => Ok(self.engines.kv.as_inner()),
+            DBType::Kv => Ok(&self.engines.kv),
             DBType::Raft => Err(box_err!("Get raft db is not allowed")),
             _ => Err(box_err!("invalid DBType type")),
         }
@@ -178,7 +175,7 @@ impl<ER: RaftEngine> Debugger<ER> {
     pub fn get(&self, db: DBType, cf: &str, key: &[u8]) -> Result<Vec<u8>> {
         validate_db_and_cf(db, cf)?;
         let db = self.get_db_from_type(db)?;
-        match db.c().get_value_cf(cf, key) {
+        match db.get_value_cf(cf, key) {
             Ok(Some(v)) => Ok(v.to_vec()),
             Ok(None) => Err(Error::NotFound(format!(
                 "value for key {:?} in db {:?}",
@@ -266,7 +263,7 @@ impl<ER: RaftEngine> Debugger<ER> {
         start: &[u8],
         end: &[u8],
         limit: u64,
-    ) -> Result<MvccInfoIterator<RocksEngineIterator>> {
+    ) -> Result<MvccInfoIterator<EK::Iterator>> {
         if end.is_empty() && limit == 0 {
             return Err(Error::InvalidArgument("no limit and to_key".to_owned()));
         }
@@ -322,18 +319,20 @@ impl<ER: RaftEngine> Debugger<ER> {
         bottommost: BottommostLevelCompaction,
     ) -> Result<()> {
         validate_db_and_cf(db, cf)?;
-        let db = self.get_db_from_type(db)?;
-        let handle = box_try!(get_cf_handle(db, cf));
-        let start = if start.is_empty() { None } else { Some(start) };
-        let end = if end.is_empty() { None } else { Some(end) };
-        info!("Debugger starts manual compact"; "db" => ?db, "cf" => cf);
-        let mut opts = CompactOptions::new();
-        opts.set_max_subcompactions(threads as i32);
-        opts.set_exclusive_manual_compaction(false);
-        opts.set_bottommost_level_compaction(bottommost.0);
-        db.compact_range_cf_opt(handle, &opts, start, end);
-        info!("Debugger finishes manual compact"; "db" => ?db, "cf" => cf);
-        Ok(())
+        // let db = self.get_db_from_type(db)?;
+        // let handle = box_try!(get_cf_handle(db, cf));
+        // let start = if start.is_empty() { None } else { Some(start) };
+        // let end = if end.is_empty() { None } else { Some(end) };
+        // info!("Debugger starts manual compact"; "db" => ?db, "cf" => cf);
+        // let mut opts = CompactOptions::new();
+        // opts.set_max_subcompactions(threads as i32);
+        // opts.set_exclusive_manual_compaction(false);
+        // opts.set_bottommost_level_compaction(bottommost.0);
+        // db.compact_range_cf_opt(handle, &opts, start, end);
+        // info!("Debugger finishes manual compact"; "db" => ?db, "cf" => cf);
+        // Ok(())
+
+        todo!("update engine trait!")
     }
 
     /// Set regions to tombstone by manual, and apply other status(such as
@@ -346,7 +345,7 @@ impl<ER: RaftEngine> Debugger<ER> {
         let mut errors = Vec::with_capacity(regions.len());
         for region in regions {
             let region_id = region.get_id();
-            if let Err(e) = set_region_tombstone(db.as_inner(), store_id, region, &mut wb) {
+            if let Err(e) = set_region_tombstone(db, store_id, region, &mut wb) {
                 errors.push((region_id, e));
             }
         }
@@ -403,7 +402,7 @@ impl<ER: RaftEngine> Debugger<ER> {
         for region in regions {
             let region_id = region.get_id();
             if let Err(e) = recover_mvcc_for_range(
-                db.as_inner(),
+                db,
                 region.get_start_key(),
                 region.get_end_key(),
                 read_only,
@@ -420,15 +419,12 @@ impl<ER: RaftEngine> Debugger<ER> {
         let db = self.engines.kv.clone();
 
         info!("Calculating split keys...");
-        let split_keys = divide_db(db.as_inner(), threads)
-            .unwrap()
-            .into_iter()
-            .map(|k| {
-                let k = Key::from_encoded(keys::origin_key(&k).to_vec())
-                    .truncate_ts()
-                    .unwrap();
-                k.as_encoded().clone()
-            });
+        let split_keys = divide_db(&db, threads).unwrap().into_iter().map(|k| {
+            let k = Key::from_encoded(keys::origin_key(&k).to_vec())
+                .truncate_ts()
+                .unwrap();
+            k.as_encoded().clone()
+        });
 
         let mut range_borders = vec![b"".to_vec()];
         range_borders.extend(split_keys);
@@ -454,13 +450,8 @@ impl<ER: RaftEngine> Debugger<ER> {
                         log_wrappers::Value::key(&end_key)
                     );
 
-                    let result = recover_mvcc_for_range(
-                        db.as_inner(),
-                        &start_key,
-                        &end_key,
-                        read_only,
-                        thread_index,
-                    );
+                    let result =
+                        recover_mvcc_for_range(&db, &start_key, &end_key, read_only, thread_index);
                     tikv_alloc::remove_thread_memory_accessor();
                     result
                 })
@@ -522,7 +513,7 @@ impl<ER: RaftEngine> Debugger<ER> {
                 })?;
 
             let tag = format!("[region {}] {}", region.get_id(), peer_id);
-            let peer_storage = box_try!(PeerStorage::<RocksEngine, ER>::new(
+            let peer_storage = box_try!(PeerStorage::<EK, ER>::new(
                 self.engines.clone(),
                 region,
                 fake_snap_worker.scheduler(),
@@ -572,107 +563,109 @@ impl<ER: RaftEngine> Debugger<ER> {
         region_ids: Option<Vec<u64>>,
         promote_learner: bool,
     ) -> Result<()> {
-        let store_id = self.get_store_ident()?.get_store_id();
-        if store_ids.iter().any(|&s| s == store_id) {
-            let msg = format!("Store {} in the failed list", store_id);
-            return Err(Error::Other(msg.into()));
-        }
-        let mut wb = RocksWriteBatch::new(self.engines.kv.as_inner().clone());
-        let store_ids = HashSet::<u64>::from_iter(store_ids);
+        // let store_id = self.get_store_ident()?.get_store_id();
+        // if store_ids.iter().any(|&s| s == store_id) {
+        //     let msg = format!("Store {} in the failed list", store_id);
+        //     return Err(Error::Other(msg.into()));
+        // }
+        // let mut wb = RocksWriteBatch::new(self.engines.kv.as_inner().clone());
+        // let store_ids = HashSet::<u64>::from_iter(store_ids);
 
-        {
-            let remove_stores = |key: &[u8], value: &[u8], kv_wb: &mut RocksWriteBatch| {
-                let (_, suffix_type) = box_try!(keys::decode_region_meta_key(key));
-                if suffix_type != keys::REGION_STATE_SUFFIX {
-                    return Ok(());
-                }
+        // {
+        //     let remove_stores = |key: &[u8], value: &[u8], kv_wb: &mut RocksWriteBatch| {
+        //         let (_, suffix_type) = box_try!(keys::decode_region_meta_key(key));
+        //         if suffix_type != keys::REGION_STATE_SUFFIX {
+        //             return Ok(());
+        //         }
 
-                let mut region_state = RegionLocalState::default();
-                box_try!(region_state.merge_from_bytes(value));
-                if region_state.get_state() == PeerState::Tombstone {
-                    return Ok(());
-                }
+        //         let mut region_state = RegionLocalState::default();
+        //         box_try!(region_state.merge_from_bytes(value));
+        //         if region_state.get_state() == PeerState::Tombstone {
+        //             return Ok(());
+        //         }
 
-                let mut new_peers = region_state.get_region().get_peers().to_owned();
-                new_peers.retain(|peer| !store_ids.contains(&peer.get_store_id()));
+        //         let mut new_peers = region_state.get_region().get_peers().to_owned();
+        //         new_peers.retain(|peer| !store_ids.contains(&peer.get_store_id()));
 
-                let region_id = region_state.get_region().get_id();
-                let old_peers = region_state.mut_region().take_peers();
+        //         let region_id = region_state.get_region().get_id();
+        //         let old_peers = region_state.mut_region().take_peers();
 
-                if promote_learner {
-                    if new_peers
-                        .iter()
-                        .filter(|peer| peer.get_role() != PeerRole::Learner)
-                        .count()
-                        != 0
-                    {
-                        // no need to promote learner, do nothing
-                    } else if new_peers
-                        .iter()
-                        .filter(|peer| peer.get_role() == PeerRole::Learner)
-                        .count()
-                        > 1
-                    {
-                        error!(
-                            "failed to promote learner due to multiple learners, skip promote learner";
-                            "region_id" => region_id,
-                        )
-                    } else {
-                        for peer in &mut new_peers {
-                            match peer.get_role() {
-                                PeerRole::Voter
-                                | PeerRole::IncomingVoter
-                                | PeerRole::DemotingVoter => {}
-                                PeerRole::Learner => {
-                                    info!(
-                                        "promote learner";
-                                        "region_id" => region_id,
-                                        "peer_id" => peer.get_id(),
-                                    );
-                                    peer.set_role(PeerRole::Voter);
-                                }
-                            }
-                        }
-                    }
-                }
-                info!(
-                    "peers changed";
-                    "region_id" => region_id,
-                    "old_peers" => ?old_peers,
-                    "new_peers" => ?new_peers,
-                );
-                // We need to leave epoch untouched to avoid inconsistency.
-                region_state.mut_region().set_peers(new_peers.into());
-                box_try!(kv_wb.put_msg_cf(CF_RAFT, key, &region_state));
-                Ok(())
-            };
+        //         if promote_learner {
+        //             if new_peers
+        //                 .iter()
+        //                 .filter(|peer| peer.get_role() != PeerRole::Learner)
+        //                 .count()
+        //                 != 0
+        //             {
+        //                 // no need to promote learner, do nothing
+        //             } else if new_peers
+        //                 .iter()
+        //                 .filter(|peer| peer.get_role() == PeerRole::Learner)
+        //                 .count()
+        //                 > 1
+        //             {
+        //                 error!(
+        //                     "failed to promote learner due to multiple learners, skip promote learner";
+        //                     "region_id" => region_id,
+        //                 )
+        //             } else {
+        //                 for peer in &mut new_peers {
+        //                     match peer.get_role() {
+        //                         PeerRole::Voter
+        //                         | PeerRole::IncomingVoter
+        //                         | PeerRole::DemotingVoter => {}
+        //                         PeerRole::Learner => {
+        //                             info!(
+        //                                 "promote learner";
+        //                                 "region_id" => region_id,
+        //                                 "peer_id" => peer.get_id(),
+        //                             );
+        //                             peer.set_role(PeerRole::Voter);
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //         info!(
+        //             "peers changed";
+        //             "region_id" => region_id,
+        //             "old_peers" => ?old_peers,
+        //             "new_peers" => ?new_peers,
+        //         );
+        //         // We need to leave epoch untouched to avoid inconsistency.
+        //         region_state.mut_region().set_peers(new_peers.into());
+        //         box_try!(kv_wb.put_msg_cf(CF_RAFT, key, &region_state));
+        //         Ok(())
+        //     };
 
-            if let Some(region_ids) = region_ids {
-                let kv = &self.engines.kv;
-                for region_id in region_ids {
-                    let key = keys::region_state_key(region_id);
-                    if let Some(value) = box_try!(kv.get_value_cf(CF_RAFT, &key)) {
-                        box_try!(remove_stores(&key, &value, &mut wb));
-                    } else {
-                        let msg = format!("No such region {} on the store", region_id);
-                        return Err(Error::Other(msg.into()));
-                    }
-                }
-            } else {
-                box_try!(self.engines.kv.scan_cf(
-                    CF_RAFT,
-                    keys::REGION_META_MIN_KEY,
-                    keys::REGION_META_MAX_KEY,
-                    false,
-                    |key, value| remove_stores(key, value, &mut wb).map(|_| true)
-                ));
-            }
-        }
+        //     if let Some(region_ids) = region_ids {
+        //         let kv = &self.engines.kv;
+        //         for region_id in region_ids {
+        //             let key = keys::region_state_key(region_id);
+        //             if let Some(value) = box_try!(kv.get_value_cf(CF_RAFT, &key)) {
+        //                 box_try!(remove_stores(&key, &value, &mut wb));
+        //             } else {
+        //                 let msg = format!("No such region {} on the store", region_id);
+        //                 return Err(Error::Other(msg.into()));
+        //             }
+        //         }
+        //     } else {
+        //         box_try!(self.engines.kv.scan_cf(
+        //             CF_RAFT,
+        //             keys::REGION_META_MIN_KEY,
+        //             keys::REGION_META_MAX_KEY,
+        //             false,
+        //             |key, value| remove_stores(key, value, &mut wb).map(|_| true)
+        //         ));
+        //     }
+        // }
 
-        let mut write_opts = WriteOptions::new();
-        write_opts.set_sync(true);
-        box_try!(wb.write_opt(&write_opts));
-        Ok(())
+        // let mut write_opts = WriteOptions::new();
+        // write_opts.set_sync(true);
+        // box_try!(wb.write_opt(&write_opts));
+        // Ok(())
+
+        todo!("update engine trait!")
     }
 
     pub fn drop_unapplied_raftlog(&self, region_ids: Option<Vec<u64>>) -> Result<()> {
@@ -861,8 +854,8 @@ impl<ER: RaftEngine> Debugger<ER> {
         let start = keys::enc_start_key(region);
         let end = keys::enc_end_key(region);
 
-        let mut res = dump_write_cf_properties(self.engines.kv.as_inner(), &start, &end)?;
-        let mut res1 = dump_default_cf_properties(self.engines.kv.as_inner(), &start, &end)?;
+        let mut res = dump_write_cf_properties(&self.engines.kv, &start, &end)?;
+        let mut res1 = dump_default_cf_properties(&self.engines.kv, &start, &end)?;
         res.append(&mut res1);
 
         let middle_key = match box_try!(get_region_approximate_middle(&self.engines.kv, region)) {
@@ -885,12 +878,12 @@ impl<ER: RaftEngine> Debugger<ER> {
 
     pub fn get_range_properties(&self, start: &[u8], end: &[u8]) -> Result<Vec<(String, String)>> {
         let mut props = dump_write_cf_properties(
-            self.engines.kv.as_inner(),
+            &self.engines.kv,
             &keys::data_key(start),
             &keys::data_end_key(end),
         )?;
         let mut props1 = dump_default_cf_properties(
-            self.engines.kv.as_inner(),
+            &self.engines.kv,
             &keys::data_key(start),
             &keys::data_end_key(end),
         )?;
@@ -903,145 +896,151 @@ impl<ER: RaftEngine> Debugger<ER> {
     }
 }
 
-fn dump_default_cf_properties(
-    db: &Arc<DB>,
+fn dump_default_cf_properties<EK: KvEngine>(
+    db: &EK,
     start: &[u8],
     end: &[u8],
 ) -> Result<Vec<(String, String)>> {
-    let mut num_entries = 0; // number of Rocksdb K/V entries.
+    // let mut num_entries = 0; // number of Rocksdb K/V entries.
 
-    let collection = box_try!(db.c().get_range_properties_cf(CF_DEFAULT, start, end));
-    let num_files = collection.len();
+    // let collection = box_try!(db.c().get_range_properties_cf(CF_DEFAULT, start, end));
+    // let num_files = collection.len();
 
-    for (_, v) in collection.iter() {
-        num_entries += v.num_entries();
-    }
-    let sst_files = collection
-        .iter()
-        .map(|(k, _)| {
-            Path::new(&*k)
-                .file_name()
-                .map(|f| f.to_str().unwrap())
-                .unwrap_or(&*k)
-                .to_string()
-        })
-        .collect::<Vec<_>>()
-        .join(", ");
+    // for (_, v) in collection.iter() {
+    //     num_entries += v.num_entries();
+    // }
+    // let sst_files = collection
+    //     .iter()
+    //     .map(|(k, _)| {
+    //         Path::new(&*k)
+    //             .file_name()
+    //             .map(|f| f.to_str().unwrap())
+    //             .unwrap_or(&*k)
+    //             .to_string()
+    //     })
+    //     .collect::<Vec<_>>()
+    //     .join(", ");
 
-    let res = vec![
-        ("defaultcf.num_entries".to_owned(), num_entries.to_string()),
-        ("defaultcf.num_files".to_owned(), num_files.to_string()),
-        ("defaultcf.sst_files".to_owned(), sst_files),
-    ];
-    Ok(res)
+    // let res = vec![
+    //     ("defaultcf.num_entries".to_owned(), num_entries.to_string()),
+    //     ("defaultcf.num_files".to_owned(), num_files.to_string()),
+    //     ("defaultcf.sst_files".to_owned(), sst_files),
+    // ];
+    // Ok(res)
+
+    todo!("update engine trait!")
 }
 
-fn dump_write_cf_properties(
-    db: &Arc<DB>,
+fn dump_write_cf_properties<EK: KvEngine>(
+    db: &EK,
     start: &[u8],
     end: &[u8],
 ) -> Result<Vec<(String, String)>> {
-    let mut num_entries = 0; // number of Rocksdb K/V entries.
+    // let mut num_entries = 0; // number of Rocksdb K/V entries.
 
-    let collection = box_try!(db.c().get_range_properties_cf(CF_WRITE, start, end));
-    let num_files = collection.len();
+    // let collection = box_try!(db.get_range_properties_cf(CF_WRITE, start, end));
+    // let num_files = collection.len();
 
-    let mut mvcc_properties = MvccProperties::new();
-    for (_, v) in collection.iter() {
-        num_entries += v.num_entries();
-        let mvcc = box_try!(RocksMvccProperties::decode(v.user_collected_properties()));
-        mvcc_properties.add(&mvcc);
-    }
+    // let mut mvcc_properties = MvccProperties::new();
+    // for (_, v) in collection.iter() {
+    //     num_entries += v.num_entries();
+    //     let mvcc = box_try!(RocksMvccProperties::decode(v.user_collected_properties()));
+    //     mvcc_properties.add(&mvcc);
+    // }
 
-    let sst_files = collection
-        .iter()
-        .map(|(k, _)| {
-            Path::new(&*k)
-                .file_name()
-                .map(|f| f.to_str().unwrap())
-                .unwrap_or(&*k)
-                .to_string()
-        })
-        .collect::<Vec<_>>()
-        .join(", ");
+    // let sst_files = collection
+    //     .iter()
+    //     .map(|(k, _)| {
+    //         Path::new(&*k)
+    //             .file_name()
+    //             .map(|f| f.to_str().unwrap())
+    //             .unwrap_or(&*k)
+    //             .to_string()
+    //     })
+    //     .collect::<Vec<_>>()
+    //     .join(", ");
 
-    let mut res: Vec<(String, String)> = [
-        (
-            "mvcc.min_ts",
-            if mvcc_properties.min_ts == TimeStamp::max() {
-                0
-            } else {
-                mvcc_properties.min_ts.into_inner()
-            },
-        ),
-        ("mvcc.max_ts", mvcc_properties.max_ts.into_inner()),
-        ("mvcc.num_rows", mvcc_properties.num_rows),
-        ("mvcc.num_puts", mvcc_properties.num_puts),
-        ("mvcc.num_deletes", mvcc_properties.num_deletes),
-        ("mvcc.num_versions", mvcc_properties.num_versions),
-        ("mvcc.max_row_versions", mvcc_properties.max_row_versions),
-    ]
-    .iter()
-    .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
-    .collect();
+    // let mut res: Vec<(String, String)> = [
+    //     (
+    //         "mvcc.min_ts",
+    //         if mvcc_properties.min_ts == TimeStamp::max() {
+    //             0
+    //         } else {
+    //             mvcc_properties.min_ts.into_inner()
+    //         },
+    //     ),
+    //     ("mvcc.max_ts", mvcc_properties.max_ts.into_inner()),
+    //     ("mvcc.num_rows", mvcc_properties.num_rows),
+    //     ("mvcc.num_puts", mvcc_properties.num_puts),
+    //     ("mvcc.num_deletes", mvcc_properties.num_deletes),
+    //     ("mvcc.num_versions", mvcc_properties.num_versions),
+    //     ("mvcc.max_row_versions", mvcc_properties.max_row_versions),
+    // ]
+    // .iter()
+    // .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
+    // .collect();
 
-    // Entries and delete marks of RocksDB.
-    let num_deletes = num_entries - mvcc_properties.num_versions;
-    res.push(("writecf.num_entries".to_owned(), num_entries.to_string()));
-    res.push(("writecf.num_deletes".to_owned(), num_deletes.to_string()));
+    // // Entries and delete marks of RocksDB.
+    // let num_deletes = num_entries - mvcc_properties.num_versions;
+    // res.push(("writecf.num_entries".to_owned(), num_entries.to_string()));
+    // res.push(("writecf.num_deletes".to_owned(), num_deletes.to_string()));
 
-    // count and list of files.
-    res.push(("writecf.num_files".to_owned(), num_files.to_string()));
-    res.push(("writecf.sst_files".to_owned(), sst_files));
+    // // count and list of files.
+    // res.push(("writecf.num_files".to_owned(), num_files.to_string()));
+    // res.push(("writecf.sst_files".to_owned(), sst_files));
 
-    Ok(res)
+    // Ok(res)
+
+    todo!("update engine trait!")
 }
 
-fn recover_mvcc_for_range(
-    db: &Arc<DB>,
+fn recover_mvcc_for_range<EK: KvEngine>(
+    db: &EK,
     start_key: &[u8],
     end_key: &[u8],
     read_only: bool,
     thread_index: usize,
 ) -> Result<()> {
-    let mut mvcc_checker = box_try!(MvccChecker::new(Arc::clone(db), start_key, end_key));
-    mvcc_checker.thread_index = thread_index;
+    // let mut mvcc_checker = box_try!(MvccChecker::new(db, start_key, end_key));
+    // mvcc_checker.thread_index = thread_index;
 
-    let wb_limit: usize = 10240;
+    // let wb_limit: usize = 10240;
 
-    loop {
-        let mut wb = RocksWriteBatch::new(db.clone());
-        mvcc_checker.check_mvcc(&mut wb, Some(wb_limit))?;
+    // loop {
+    //     let mut wb = RocksWriteBatch::new(db.clone());
+    //     mvcc_checker.check_mvcc(&mut wb, Some(wb_limit))?;
 
-        let batch_size = wb.count();
+    //     let batch_size = wb.count();
 
-        if !read_only {
-            let mut write_opts = WriteOptions::new();
-            write_opts.set_sync(true);
-            box_try!(wb.write_opt(&write_opts));
-        } else {
-            info!("thread {}: skip write {} rows", thread_index, batch_size);
-        }
+    //     if !read_only {
+    //         let mut write_opts = WriteOptions::new();
+    //         write_opts.set_sync(true);
+    //         box_try!(wb.write_opt(&write_opts));
+    //     } else {
+    //         info!("thread {}: skip write {} rows", thread_index, batch_size);
+    //     }
 
-        info!(
-            "thread {}: total fix default: {}, lock: {}, write: {}",
-            thread_index,
-            mvcc_checker.default_fix_count,
-            mvcc_checker.lock_fix_count,
-            mvcc_checker.write_fix_count
-        );
+    //     info!(
+    //         "thread {}: total fix default: {}, lock: {}, write: {}",
+    //         thread_index,
+    //         mvcc_checker.default_fix_count,
+    //         mvcc_checker.lock_fix_count,
+    //         mvcc_checker.write_fix_count
+    //     );
 
-        if batch_size < wb_limit {
-            info!("thread {} has finished working.", thread_index);
-            return Ok(());
-        }
-    }
+    //     if batch_size < wb_limit {
+    //         info!("thread {} has finished working.", thread_index);
+    //         return Ok(());
+    //     }
+    // }
+
+    todo!("update engine trait!")
 }
 
-pub struct MvccChecker {
-    lock_iter: RocksEngineIterator,
-    default_iter: RocksEngineIterator,
-    write_iter: RocksEngineIterator,
+pub struct MvccChecker<EK: KvEngine> {
+    lock_iter: EK::Iterator,
+    default_iter: EK::Iterator,
+    write_iter: EK::Iterator,
     scan_count: usize,
     lock_fix_count: usize,
     default_fix_count: usize,
@@ -1049,8 +1048,8 @@ pub struct MvccChecker {
     pub thread_index: usize,
 }
 
-impl MvccChecker {
-    fn new(db: Arc<DB>, start_key: &[u8], end_key: &[u8]) -> Result<Self> {
+impl<EK: KvEngine> MvccChecker<EK> {
+    fn new(db: &EK, start_key: &[u8], end_key: &[u8]) -> Result<Self> {
         let start_key = keys::data_key(start_key);
         let end_key = keys::data_end_key(end_key);
         let gen_iter = |cf: &str| -> Result<_> {
@@ -1061,7 +1060,7 @@ impl MvccChecker {
                 Some(KeyBuilder::from_vec(to, 0, 0)),
                 false,
             );
-            let mut iter = box_try!(db.c().iterator_cf_opt(cf, readopts));
+            let mut iter = box_try!(db.iterator_cf_opt(cf, readopts));
             iter.seek(SeekKey::Start).unwrap();
             Ok(iter)
         };
@@ -1080,7 +1079,7 @@ impl MvccChecker {
 
     fn min_key(
         key: Option<Vec<u8>>,
-        iter: &RocksEngineIterator,
+        iter: &EK::Iterator,
         f: fn(&[u8]) -> &[u8],
     ) -> Option<Vec<u8>> {
         let iter_key = if iter.valid().unwrap() {
@@ -1105,11 +1104,13 @@ impl MvccChecker {
     pub fn check_mvcc(&mut self, wb: &mut RocksWriteBatch, limit: Option<usize>) -> Result<()> {
         loop {
             // Find min key in the 3 CFs.
-            let mut key = MvccChecker::min_key(None, &self.default_iter, |k| {
+            let mut key = MvccChecker::<EK>::min_key(None, &self.default_iter, |k| {
                 Key::truncate_ts_for(k).unwrap()
             });
-            key = MvccChecker::min_key(key, &self.lock_iter, |k| k);
-            key = MvccChecker::min_key(key, &self.write_iter, |k| Key::truncate_ts_for(k).unwrap());
+            key = MvccChecker::<EK>::min_key(key, &self.lock_iter, |k| k);
+            key = MvccChecker::<EK>::min_key(key, &self.write_iter, |k| {
+                Key::truncate_ts_for(k).unwrap()
+            });
 
             match key {
                 Some(key) => self.check_mvcc_key(wb, key.as_ref())?,
@@ -1329,17 +1330,16 @@ fn validate_db_and_cf(db: DBType, cf: &str) -> Result<()> {
     }
 }
 
-fn set_region_tombstone(
-    db: &Arc<DB>,
+fn set_region_tombstone<EK: KvEngine>(
+    kv_engine: &EK,
     store_id: u64,
     region: Region,
-    wb: &mut RocksWriteBatch,
+    wb: &mut EK::WriteBatch,
 ) -> Result<()> {
     let id = region.get_id();
     let key = keys::region_state_key(id);
 
-    let region_state = db
-        .c()
+    let region_state = kv_engine
         .get_msg_cf::<RegionLocalState>(CF_RAFT, &key)
         .map_err(|e| box_err!(e))
         .and_then(|s| s.ok_or_else(|| Error::Other("Can't find RegionLocalState".into())))?;
@@ -1378,13 +1378,13 @@ fn set_region_tombstone(
     Ok(())
 }
 
-fn divide_db(db: &Arc<DB>, parts: usize) -> raftstore::Result<Vec<Vec<u8>>> {
+fn divide_db<EK: KvEngine>(db: &EK, parts: usize) -> raftstore::Result<Vec<Vec<u8>>> {
     // Empty start and end key cover all range.
     let start = keys::data_key(b"");
     let end = keys::data_end_key(b"");
     let range = Range::new(&start, &end);
     Ok(box_try!(
-        RocksEngine::from_db(db.clone()).get_range_approximate_split_keys(range, parts - 1)
+        db.get_range_approximate_split_keys(range, parts - 1)
     ))
 }
 
@@ -1532,7 +1532,7 @@ mod tests {
         }
     }
 
-    fn new_debugger() -> Debugger<RocksEngine> {
+    fn new_debugger() -> Debugger<RocksEngine, RocksEngine> {
         let tmp = Builder::new().prefix("test_debug").tempdir().unwrap();
         let path = tmp.path().to_str().unwrap();
         let engine = Arc::new(
@@ -1556,7 +1556,7 @@ mod tests {
         Debugger::new(engines, ConfigController::default())
     }
 
-    impl Debugger<RocksEngine> {
+    impl Debugger<RocksEngine, RocksEngine> {
         fn set_store_id(&self, store_id: u64) {
             let mut ident = self.get_store_ident().unwrap_or_default();
             ident.set_store_id(store_id);
@@ -2184,23 +2184,25 @@ mod tests {
         }
         wb.write().unwrap();
         // Fix problems.
-        let mut checker = MvccChecker::new(Arc::clone(&db), b"k", b"l").unwrap();
-        let mut wb = db.c().write_batch();
-        checker.check_mvcc(&mut wb, None).unwrap();
-        wb.write().unwrap();
-        // Check result.
-        for (cf, k, _, expect) in kv {
-            let data = db
-                .get_cf(
-                    get_cf_handle(&db, cf).unwrap(),
-                    &keys::data_key(k.as_encoded()),
-                )
-                .unwrap();
-            match expect {
-                Expect::Keep => assert!(data.is_some()),
-                Expect::Remove => assert!(data.is_none()),
-            }
-        }
+        // let mut checker = MvccChecker::new(Arc::clone(&db), b"k", b"l").unwrap();
+        // let mut wb = db.c().write_batch();
+        // checker.check_mvcc(&mut wb, None).unwrap();
+        // wb.write().unwrap();
+        // // Check result.
+        // for (cf, k, _, expect) in kv {
+        //     let data = db
+        //         .get_cf(
+        //             get_cf_handle(&db, cf).unwrap(),
+        //             &keys::data_key(k.as_encoded()),
+        //         )
+        //         .unwrap();
+        //     match expect {
+        //         Expect::Keep => assert!(data.is_some()),
+        //         Expect::Remove => assert!(data.is_none()),
+        //     }
+        // }
+
+        todo!("update engine trait!")
     }
 
     #[test]

@@ -11,7 +11,8 @@ use engine_rocks::{
     RocksEngine,
 };
 use engine_traits::{
-    Engines, Error as EngineError, RaftEngine, ALL_CFS, CF_DEFAULT, CF_LOCK, CF_WRITE, DATA_CFS,
+    Engines, Error as EngineError, KvEngine, RaftEngine, ALL_CFS, CF_DEFAULT, CF_LOCK, CF_WRITE,
+    DATA_CFS,
 };
 use futures::{executor::block_on, future, stream, Stream, StreamExt, TryStreamExt};
 use grpcio::{ChannelBuilder, Environment};
@@ -854,7 +855,7 @@ impl DebugExecutor for DebugClient {
     }
 }
 
-impl<ER: RaftEngine> DebugExecutor for Debugger<ER> {
+impl<EK: KvEngine, ER: RaftEngine> DebugExecutor for Debugger<EK, ER> {
     fn check_local_mode(&self) {}
 
     fn get_all_regions_in_store(&self) -> Vec<u64> {
