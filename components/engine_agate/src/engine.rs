@@ -10,8 +10,8 @@ use std::{
 use agatedb::{Agate, AgateIterator, AgateOptions, IteratorOptions};
 use bytes::Bytes;
 use engine_traits::{
-    Error, IterOptions, Iterable, Iterator, KvEngine, Peekable, ReadOptions, Result, SeekKey,
-    SyncMutable, TabletAccessor, WriteOptions, CF_DEFAULT,
+    Error, IterOptions, Iterable, Iterator, KvEngine, MiscExt, Peekable, RaftEngine, ReadOptions,
+    Result, SeekKey, SyncMutable, TabletAccessor, WriteOptions, CF_DEFAULT,
 };
 
 use crate::{
@@ -25,6 +25,7 @@ use crate::{
 pub struct AgateEngine {
     pub(crate) agate: Arc<Agate>,
     pub(crate) cf_names: HashSet<String>,
+    pub(crate) path: PathBuf,
 }
 
 impl AgateEngine {
@@ -38,6 +39,7 @@ impl AgateEngine {
         AgateEngine {
             agate: Arc::new(agate_opts.open().unwrap()),
             cf_names: HashSet::from_iter([vec![CF_DEFAULT.to_string()], cfs].concat().into_iter()),
+            path: path.to_path_buf(),
         }
     }
 
@@ -57,7 +59,7 @@ impl KvEngine for AgateEngine {
         AgateSnapshot::new(self)
     }
     fn sync(&self) -> Result<()> {
-        panic!()
+        self.sync_wal()
     }
     fn bad_downcast<T: 'static>(&self) -> &T {
         panic!()

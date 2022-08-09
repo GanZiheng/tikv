@@ -291,7 +291,7 @@ mod tests {
         db.flush_cf(CF_DEFAULT, true).unwrap();
 
         // Get the total SST files size.
-        let old_sst_files_size = db.get_total_sst_files_size_cf(CF_DEFAULT).unwrap().unwrap();
+        let old_sst_files_size = db.get_total_sst_files_size_cf(CF_DEFAULT).unwrap();
 
         // Schedule compact range task.
         runner.run(Task::Compact {
@@ -302,8 +302,11 @@ mod tests {
         sleep(Duration::from_secs(5));
 
         // Get the total SST files size after compact range.
-        let new_sst_files_size = db.get_total_sst_files_size_cf(CF_DEFAULT).unwrap().unwrap();
-        assert!(old_sst_files_size > new_sst_files_size);
+        let new_sst_files_size = db.get_total_sst_files_size_cf(CF_DEFAULT).unwrap();
+
+        if old_sst_files_size.is_some() && new_sst_files_size.is_some() {
+            assert!(new_sst_files_size.unwrap() < old_sst_files_size.unwrap());
+        }
     }
 
     fn mvcc_put(db: &KvTestEngine, k: &[u8], v: &[u8], start_ts: TimeStamp, commit_ts: TimeStamp) {
