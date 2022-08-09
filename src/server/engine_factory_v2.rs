@@ -7,19 +7,19 @@ use std::{
 
 use collections::HashMap;
 use engine_rocks::RocksEngine;
-use engine_traits::{RaftEngine, Result, TabletAccessor, TabletFactory};
+use engine_traits::{KvEngine, RaftEngine, Result, TabletAccessor, TabletFactory};
 
 use crate::server::engine_factory::KvEngineFactory;
 
 const TOMBSTONE_MARK: &str = "TOMBSTONE_TABLET";
 
 #[derive(Clone)]
-pub struct KvEngineFactoryV2<ER: RaftEngine> {
-    inner: KvEngineFactory<ER>,
+pub struct KvEngineFactoryV2<EK: KvEngine, ER: RaftEngine> {
+    inner: KvEngineFactory<EK, ER>,
     registry: Arc<Mutex<HashMap<(u64, u64), RocksEngine>>>,
 }
 
-impl<ER: RaftEngine> TabletFactory<RocksEngine> for KvEngineFactoryV2<ER> {
+impl<EK: KvEngine, ER: RaftEngine> TabletFactory<RocksEngine> for KvEngineFactoryV2<EK, ER> {
     fn create_tablet(&self, id: u64, suffix: u64) -> Result<RocksEngine> {
         let mut reg = self.registry.lock().unwrap();
         if let Some(db) = reg.get(&(id, suffix)) {
@@ -152,7 +152,7 @@ impl<ER: RaftEngine> TabletFactory<RocksEngine> for KvEngineFactoryV2<ER> {
     }
 }
 
-impl<ER: RaftEngine> TabletAccessor<RocksEngine> for KvEngineFactoryV2<ER> {
+impl<EK: KvEngine, ER: RaftEngine> TabletAccessor<RocksEngine> for KvEngineFactoryV2<EK, ER> {
     #[inline]
     fn for_each_opened_tablet(&self, f: &mut dyn FnMut(u64, u64, &RocksEngine)) {
         let reg = self.registry.lock().unwrap();
@@ -189,8 +189,8 @@ mod tests {
         };
     }
 
-    impl<ER: RaftEngine> KvEngineFactoryV2<ER> {
-        pub fn new(inner: KvEngineFactory<ER>) -> Self {
+    impl<EK: KvEngine, ER: RaftEngine> KvEngineFactoryV2<EK, ER> {
+        pub fn new(inner: KvEngineFactory<EK, ER>) -> Self {
             KvEngineFactoryV2 {
                 inner,
                 registry: Arc::new(Mutex::new(HashMap::default())),
@@ -204,7 +204,8 @@ mod tests {
         let dir = test_util::temp_dir("test_kvengine_factory", false);
         let env = cfg.build_shared_rocks_env(None, None).unwrap();
 
-        let builder = KvEngineFactoryBuilder::<RocksEngine>::new(env, &cfg, dir.path());
+        let builder =
+            KvEngineFactoryBuilder::<RocksEngine, RocksEngine>::new(env, &cfg, dir.path());
         let factory = builder.build();
         let shared_db = factory.create_shared_db().unwrap();
         let tablet = TabletFactory::create_tablet(&factory, 1, 10);
@@ -237,7 +238,7 @@ mod tests {
         let dir = test_util::temp_dir("test_kvengine_factory_v2", false);
         let env = cfg.build_shared_rocks_env(None, None).unwrap();
 
-        let builder = KvEngineFactoryBuilder::<RocksEngine>::new(env, &cfg, dir.path());
+        let builder = KvEngineFactoryBuilder::<RocksEngine, RocksEngine>::new(env, &cfg, dir.path());
         let inner_factory = builder.build();
         let factory = KvEngineFactoryV2::new(inner_factory);
         let tablet = factory.create_tablet(1, 10);
@@ -275,7 +276,7 @@ mod tests {
         let dir = test_util::temp_dir("test_get_live_tablets", false);
         let env = cfg.build_shared_rocks_env(None, None).unwrap();
 
-        let builder = KvEngineFactoryBuilder::<RocksEngine>::new(env, &cfg, dir.path());
+        let builder = KvEngineFactoryBuilder::<RocksEngine, RocksEngine>::new(env, &cfg, dir.path());
         let inner_factory = builder.build();
         let factory = KvEngineFactoryV2::new(inner_factory);
         factory.create_tablet(1, 10).unwrap();

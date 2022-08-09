@@ -33,6 +33,7 @@ pprof-fp = ["tikv/pprof-fp"]
 [dependencies]
 clap = "2.32"
 server = { path = "../../components/server", default-features = false }
+engine_rocks = { path = "../../components/engine_rocks" }
 tikv = { path = "../../", default-features = false }
 toml = "0.5"
 

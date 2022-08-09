@@ -8,8 +8,8 @@ use std::{
 
 use engine_rocks::{RocksEngine, RocksEngineIterator, RocksWriteBatch};
 use engine_traits::{
-    IterOptions, Iterable, Iterator, Mutable, SeekKey, WriteBatch, WriteBatchExt, CF_DEFAULT,
-    CF_LOCK, CF_WRITE,
+    IterOptions, Iterable, Iterator, KvEngine, Mutable, SeekKey, WriteBatch, WriteBatchExt,
+    CF_DEFAULT, CF_LOCK, CF_WRITE,
 };
 use tikv_util::sys::thread::StdThreadBuildWrapper;
 use txn_types::{Key, TimeStamp, Write, WriteRef};
@@ -41,13 +41,13 @@ impl ResetToVersionState {
 }
 
 /// `ResetToVersionWorker` is the worker that does the actual reset-to-version work.
-pub struct ResetToVersionWorker {
+pub struct ResetToVersionWorker<EK: KvEngine> {
     /// `ts` is the timestamp to reset to.
     ts: TimeStamp,
     /// `write_iter` is the iterator to scan through the WRITE cf
-    write_iter: RocksEngineIterator,
+    write_iter: EK::Iterator,
     /// `lock_iter` is the iterator to scan through the LOCK cf
-    lock_iter: RocksEngineIterator,
+    lock_iter: EK::Iterator,
     /// `state` is current state of this task
     state: Arc<Mutex<ResetToVersionState>>,
 }
@@ -60,10 +60,10 @@ struct Batch {
 }
 
 #[allow(dead_code)]
-impl ResetToVersionWorker {
+impl<EK: KvEngine> ResetToVersionWorker<EK> {
     pub fn new(
-        mut write_iter: RocksEngineIterator,
-        mut lock_iter: RocksEngineIterator,
+        mut write_iter: EK::Iterator,
+        mut lock_iter: EK::Iterator,
         ts: TimeStamp,
         state: Arc<Mutex<ResetToVersionState>>,
     ) -> Self {
@@ -121,7 +121,7 @@ impl ResetToVersionWorker {
     pub fn process_next_batch(
         &mut self,
         batch_size: usize,
-        wb: &mut RocksWriteBatch,
+        wb: &mut EK::WriteBatch,
     ) -> Result<bool> {
         let Batch { writes, has_more } = self.scan_next_batch(batch_size)?;
         for (key, write) in writes {
@@ -140,7 +140,7 @@ impl ResetToVersionWorker {
     pub fn process_next_batch_lock(
         &mut self,
         batch_size: usize,
-        wb: &mut RocksWriteBatch,
+        wb: &mut EK::WriteBatch,
     ) -> Result<bool> {
         let mut has_more = true;
         for _ in 0..batch_size {
@@ -170,16 +170,16 @@ impl ResetToVersionWorker {
 
 /// `ResetToVersionManager` is the manager that manages the reset-to-version process.
 /// User should interact with `ResetToVersionManager` instead of using `ResetToVersionWorker` directly.  
-pub struct ResetToVersionManager {
+pub struct ResetToVersionManager<EK: KvEngine> {
     /// Current state of the reset-to-version process.
     state: Arc<Mutex<ResetToVersionState>>,
     /// The engine we are working on
-    engine: RocksEngine,
+    engine: EK,
     /// Current working worker
     worker_handle: RefCell<Option<JoinHandle<()>>>,
 }
 
-impl Clone for ResetToVersionManager {
+impl<EK: KvEngine> Clone for ResetToVersionManager<EK> {
     fn clone(&self) -> Self {
         Self {
             state: self.state.clone(),
@@ -190,8 +190,8 @@ impl Clone for ResetToVersionManager {
 }
 
 #[allow(dead_code)]
-impl ResetToVersionManager {
-    pub fn new(engine: RocksEngine) -> Self {
+impl<EK: KvEngine> ResetToVersionManager<EK> {
+    pub fn new(engine: EK) -> Self {
         let state = Arc::new(Mutex::new(ResetToVersionState::RemovingWrite {
             scanned: 0,
         }));
@@ -210,7 +210,8 @@ impl ResetToVersionManager {
             .iterator_cf_opt(CF_WRITE, readopts.clone())
             .unwrap();
         let lock_iter = self.engine.iterator_cf_opt(CF_LOCK, readopts).unwrap();
-        let mut worker = ResetToVersionWorker::new(write_iter, lock_iter, ts, self.state.clone());
+        let mut worker =
+            ResetToVersionWorker::<EK>::new(write_iter, lock_iter, ts, self.state.clone());
         let mut wb = self.engine.write_batch();
         let props = tikv_util::thread_group::current_properties();
         if self.worker_handle.borrow().is_some() {

@@ -5,6 +5,7 @@
 use std::{path::Path, process};
 
 use clap::{crate_authors, App, Arg};
+use engine_rocks::RocksEngine;
 use server::setup::{ensure_no_unrecognized_config, validate_and_persist_config};
 use tikv::config::TiKvConfig;
 
@@ -186,5 +187,5 @@ fn main() {
         process::exit(0)
     }
 
-    server::server::run_tikv(config);
+    server::server::run_tikv::<RocksEngine>(config);
 }
